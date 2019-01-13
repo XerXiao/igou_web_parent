@@ -10,9 +10,18 @@ import Vuex from 'vuex'
 //import NProgress from 'nprogress'
 //import 'nprogress/nprogress.css'
 import routes from './routes'
-import Mock from './mock'
-Mock.bootstrap();
+// import Mock from './mock'
+// Mock.bootstrap();
 import 'font-awesome/css/font-awesome.min.css'
+//引入axios
+import axios from 'axios'
+//easymock 模拟数据
+// axios.defaults.baseURL = "https://easy-mock.com/mock/5c395c570157fc56d707bccf/igou";
+//后台真实接口
+axios.defaults.baseURL = "http://127.0.0.1:9527";
+// 将API方法绑定到全局，为vue对象添加了$http属性，方便后面调用
+Vue.prototype.$http = axios
+Vue.config.productionTip = false
 
 Vue.use(ElementUI)
 Vue.use(VueRouter)

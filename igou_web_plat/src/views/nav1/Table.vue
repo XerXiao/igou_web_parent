@@ -173,12 +173,19 @@
 				};
 				this.listLoading = true;
 				//NProgress.start();
-				getUserListPage(para).then((res) => {
-					this.total = res.data.total;
-					this.users = res.data.users;
-					this.listLoading = false;
-					//NProgress.done();
-				});
+				this.$http.get("/services/plat/users",para)
+					.then(({data}) => {
+                        this.total = data.total;
+                        this.users = data.users;
+                        this.listLoading = false;
+                        //NProgress.done();
+					});
+				// getUserListPage(para).then((res) => {
+				// 	this.total = res.data.total;
+				// 	this.users = res.data.users;
+				// 	this.listLoading = false;
+				// 	//NProgress.done();
+				// });
 			},
 			//删除
 			handleDel: function (index, row) {

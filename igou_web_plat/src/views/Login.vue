@@ -16,7 +16,8 @@
 </template>
 
 <script>
-  import { requestLogin } from '../api/api';
+  // import { requestLogin } from '../api/api';
+  // import axios from 'axios'
   //import NProgress from 'nprogress'
   export default {
     data() {
@@ -50,21 +51,23 @@
             //_this.$router.replace('/table');
             this.logining = true;
             //NProgress.start();
-            var loginParams = { username: this.ruleForm2.account, password: this.ruleForm2.checkPass };
-            requestLogin(loginParams).then(data => {
-              this.logining = false;
-              //NProgress.done();
-              let { msg, code, user } = data;
-              if (code !== 200) {
-                this.$message({
-                  message: msg,
-                  type: 'error'
-                });
-              } else {
-                sessionStorage.setItem('user', JSON.stringify(user));
-                this.$router.push({ path: '/table' });
-              }
-            });
+            var loginParams = { name: this.ruleForm2.account, password: this.ruleForm2.checkPass };
+            this.$http.post("/services/plat/login",loginParams)
+                .then(({data}) => {
+                    this.logining = false;
+                    //NProgress.done();
+                    let { message, errorcode,success, resultObject } = data;
+                    if (!success) {
+                        this.$message({
+                            message: message,
+                            type: 'error'
+                        });
+                    } else {
+                        console.debug("in")
+                        sessionStorage.setItem('user', JSON.stringify(resultObject));
+                        this.$router.push({ path: '/main' });
+                    }
+                })
           } else {
             console.log('error submit!!');
             return false;
