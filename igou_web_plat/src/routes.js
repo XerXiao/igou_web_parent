@@ -1,8 +1,9 @@
 import Login from './views/Login.vue'
 import NotFound from './views/404.vue'
 import Home from './views/Home.vue'
-import Main from './views/Main.vue'
-import Table from './views/nav1/Table.vue'
+import Brand from './views/product/Brand.vue'
+import Product from './views/product/Product.vue'
+import ProductType from './views/product/ProductType.vue'
 import Form from './views/nav1/Form.vue'
 import user from './views/nav1/user.vue'
 import Page4 from './views/nav2/Page4.vue'
@@ -31,7 +32,9 @@ let routes = [
         iconCls: 'el-icon-message',//图标样式class
         children: [
             { path: '/main', component: echarts, name: '主页', hidden: true },
-            { path: '/table', component: Table, name: '商品管理' },
+            { path: '/product', component: Product, name: '商品管理' },
+            { path: '/brand', component: Brand, name: '商品品牌管理' },
+            { path: '/productType', component: ProductType, name: '商品类别管理' },
             { path: '/form', component: Form, name: 'Form' },
             { path: '/user', component: user, name: '列表' },
         ]
