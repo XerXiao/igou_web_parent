@@ -7,9 +7,9 @@
                     <el-input
                             placeholder="请输入名称"
                             v-model="filters.keyword"
+                            prefix-icon="el-icon-search"
                             clearable>
                     </el-input>
-
                 </el-form-item>
                 <el-form-item>
                     <el-button type="primary" v-on:click="getProducts">查询</el-button>
@@ -51,10 +51,8 @@
             </el-table-column>
             <el-table-column prop="commentScore" label="评分" min-width="100" sortable>
             </el-table-column>
-            <el-table-column prop="productType.path" label="路径" min-width="120" :formatter="pathFormatter">
-            </el-table-column>
             <el-table-column label="操作" width="150" fixed="right">
-                <template scope="scope">
+                <template slot-scope="scope">
                     <el-button size="small" @click="handleAddEdit(scope.$index, scope.row)">编辑</el-button>
                     <el-button type="danger" size="small" @click="handleDel(scope.$index, scope.row)">删除</el-button>
                 </template>
@@ -70,7 +68,10 @@
         </el-col>
 
         <!--新增界面-->
-        <el-dialog title="操作" v-model="operateFormVisible" :close-on-click-modal="false">
+        <el-dialog title="操作"
+                   :visible="operateFormVisible"
+                   :close-on-click-modal="false"
+        >
             <el-form :model="operateForm" label-width="80px" :rules="operateFormRules" ref="operateForm">
                 <input type="hidden" name="id" v-model="operateForm.id"/>
                 <el-form-item label="商品名称" prop="name">
@@ -93,18 +94,27 @@
                                 :options="productTypes"
                                 :props="productsProps"
                                 filterable
-                                v-model="operateForm.path"></el-cascader>
+                                v-model="operateForm.path"
+                                size="medium"
+                                style="width: 50%"
+                        ></el-cascader>
                     </div>
                 </el-form-item>
                 <el-form-item label="商品品牌">
                     <div class="block">
-                        <el-cascader
-                                placeholder="请选择或输入"
-                                filterable
-                                :options="brands"
-                                :props="brandProps"
+                        <el-select
                                 v-model="operateForm.brandId"
-                        ></el-cascader>
+                                clearable placeholder="请选择"
+                                :props="brandProps"
+                        >
+                            <el-option
+                                    v-for="item in brands"
+                                    :key="item.value"
+                                    :label="item.name"
+                                    :value="item.id">
+                            </el-option>
+                        </el-select>
+
                     </div>
                 </el-form-item>
 
@@ -192,6 +202,7 @@
                     subName: '',
                     code: '',
                     path: [],
+                    productTypeId: '',
                     brandId: '',
                     onSaleTime: '',
                     offSaleTime: ''
@@ -254,7 +265,6 @@
             },
             //显示操作界面
             handleAddEdit: function (index,row) {
-
                 //index为编辑时传入的行号，从零开始，新增时我传入-1来区分操作
                 if(index != -1) {
                     //编辑操作，回显数据
@@ -276,7 +286,7 @@
                         name: '',
                         subName: '',
                         code: '',
-                        path: '',
+                        path: [],
                         brandId: '',
                         onSaleTime: '',
                         offSaleTime: ''
@@ -291,7 +301,7 @@
                         this.$confirm('确认提交吗？', '提示', {}).then(() => {
                             this.addLoading = true;
                             //NProgress.start();
-                            this.operateForm.productTypeId = this.operateForm.productTypeId.pop();
+                            this.operateForm.productTypeId = this.operateForm.path.pop();
                             let para = Object.assign({}, this.operateForm);
                             // para.birth = (!para.birth || para.birth == '') ? '' : util.formatDate.format(new Date(para.birth), 'yyyy-MM-dd');
                             //后台根据id是否为null判断选择操作
@@ -360,14 +370,6 @@
             //时间格式化
             getOffSaleTime(val) {
                 this.operateForm.offSaleTime =val;
-            },
-            pathFormatter(row, column, cellValue, index) {
-                var arr = [];
-                arr = cellValue.split(".").splice(1,3);
-                for (let a of arr) {
-                    parseInt(a);
-                }
-                return arr;
             }
         },
         mounted() {

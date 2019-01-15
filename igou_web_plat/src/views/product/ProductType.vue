@@ -3,24 +3,14 @@
         <div style="padding-top: 20px;">
             <el-row :gutter="20">
                 <el-col :span="6">
-                    <!--<el-tree-->
-                            <!--style="height: 580px;overflow: scroll;overflow-x:hidden"-->
-                            <!--:data="productTypes"-->
-                            <!--show-checkbox-->
-                            <!--node-key="id"-->
-                            <!--:props="defaultProps"-->
-                            <!--@node-click="rightClick"-->
-                            <!--@node-contextmenu="rightClick"-->
-                    <!--&gt;-->
-                    <!--</el-tree>-->
-                    <!--ref="SlotMenuList"-->
                     <el-tree
                             style="height: 580px;overflow: scroll;overflow-x:hidden"
                             :data="productTypes"
-                            :props="defaultProps"
+                            show-checkbox
                             node-key="id"
-                            @node-contextmenu='rightClick'
-                            accordion
+                            :props="defaultProps"
+                            @node-click="rightClick"
+                            @node-contextmenu="rightClick"
                     >
                     </el-tree>
                     <!--鼠标右键点击出现页面-->
