@@ -21,6 +21,7 @@ export const getProductListPage = params => { return axios.get(`${base}/product/
 export const removeProduct = id => { return axios.delete(`${productBase}/product/delete/`+id)};
 
 export const batchRemoveProduct = params => { return axios.delete(`${productBase}/product/batchRemove`, { params : params }); };
+export const batchRemoveBrand = params => { return axios.delete(`${productBase}/brand/batchRemove`, { params : params }); };
 
 export const editProduct = params => { return axios.get(`${base}/product/edit`, { params: params }); };
 

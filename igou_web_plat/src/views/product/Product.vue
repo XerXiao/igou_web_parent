@@ -69,7 +69,7 @@
 
         <!--新增界面-->
         <el-dialog title="操作"
-                   :visible="operateFormVisible"
+                   :visible.sync="operateFormVisible"
                    :close-on-click-modal="false"
         >
             <el-form :model="operateForm" label-width="80px" :rules="operateFormRules" ref="operateForm">
@@ -105,7 +105,6 @@
                         <el-select
                                 v-model="operateForm.brandId"
                                 clearable placeholder="请选择"
-                                :props="brandProps"
                         >
                             <el-option
                                     v-for="item in brands"
