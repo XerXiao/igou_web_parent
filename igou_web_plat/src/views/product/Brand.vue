@@ -10,7 +10,7 @@
                     <el-button type="primary" v-on:click="getBrands">查询</el-button>
                 </el-form-item>
                 <el-form-item>
-                    <el-button type="primary" @click="handleAdd">新增</el-button>
+                    <el-button type="primary" @click="handleAddEdit(-1,null)">新增</el-button>
                 </el-form-item>
             </el-form>
         </el-col>
@@ -83,10 +83,11 @@
                 <el-form-item label="Logo">
                     <el-upload
                             class="upload-demo"
-                            action="https://jsonplaceholder.typicode.com/posts/"
+                            action="http://127.0.0.1:9527/services/common/upload"
                             :on-preview="handlePreview"
                             :on-remove="handleRemove"
                             :file-list="fileList2"
+                            :on-success="getUrl"
                             list-type="picture">
                         <el-button size="small" type="primary">点击上传</el-button>
                         <div slot="tip" class="el-upload__tip">只能上传jpg/png文件，且不超过500kb</div>
@@ -123,13 +124,8 @@
                 page: 1,
                 listLoading: false,
                 sels: [],//列表选中列
-                fileList2: [{
-                    name: 'food.jpeg',
-                    url: 'https://fuss10.elemecdn.com/3/63/4e7f3a15429bfda99bce42a18cdd1jpeg.jpeg?imageMogr2/thumbnail/360x360/format/webp/quality/100'
-                }, {
-                    name: 'food2.jpeg',
-                    url: 'https://fuss10.elemecdn.com/3/63/4e7f3a15429bfda99bce42a18cdd1jpeg.jpeg?imageMogr2/thumbnail/360x360/format/webp/quality/100'
-                }],
+                fileList2: [],
+                fileObj:[],
                 operateFormVisible: false,//操作界面是否显示
                 operateLoading: false,
                 operateFormRules: {
@@ -143,6 +139,7 @@
                     sortIndex: '',
                     englishName: '',
                     productTypeId: 0,
+                    logo: '',
                     path: [],
                     description: ''
                 }
@@ -151,7 +148,21 @@
         },
         methods: {
             handleRemove(file, fileList) {
-                console.log(file, fileList);
+                //请求后台删除文件
+                let str = file.response.resultObject;
+                this.$http.delete("/services/common/delete?filePath="+str)
+                    .then(({data})=> {
+                        this.$message({
+                            message: '删除成功',
+                            type: 'success'
+                        });
+                        this.operateForm.logo = '';
+                    }).catch(() => {
+                    this.$message({
+                        message: '删除失败',
+                        type: 'error'
+                    });
+                })
             },
             handlePreview(file) {
                 console.log(file);
@@ -179,12 +190,6 @@
                         this.listLoading = false;
                         //NProgress.done();
                     });
-                // getUserListPage(para).then((res) => {
-                // 	this.total = res.data.total;
-                // 	this.brands = res.data.brands;
-                // 	this.listLoading = false;
-                // 	//NProgress.done();
-                // });
             },
             //获取所有品牌
             getProductTypes: function () {
@@ -218,12 +223,16 @@
             //显示操作界面
             handleAddEdit: function (index, row) {
                 //index为编辑时传入的行号，从零开始，新增时我传入-1来区分操作
+                //编辑操作，回显数据
+                this.getProductTypes();
+                this.getBrands();
                 if (index != -1) {
-                    //编辑操作，回显数据
-                    this.getProductTypes();
-                    this.getBrands();
+                    //先清空预览列表
+                    this.fileList2 = [];
                     //级联回显处理
                     var path = row.productType.path;
+                    //照片回显
+                    this.photoFeed(row);
                     var arr = [];
                     arr = path.split(".").splice(1, 3);
                     for (let i = 0; i < arr.length; i++) {
@@ -232,30 +241,20 @@
                     this.operateForm = Object.assign({}, row);
                     this.operateForm.path = arr;
                 } else {
-                    //新增操作
+                    this.fileList2 = [];
+                    //新增操作;
                     this.operateForm = {
                         id: null,
                         name: '',
                         englishName: '',
                         productTypeId: 0,
                         path: [],
-                        birth: '',
-                        operater: '',
+                        logo: '',
                         description: ''
                     };
+
                 }
                 this.operateFormVisible = true;
-            },
-            //显示操作界面
-            handleAdd: function () {
-                this.operateFormVisible = true;
-                this.operateForm = {
-                    name: '',
-                    sex: -1,
-                    age: 0,
-                    birth: '',
-                    operater: ''
-                };
             },
             //新增或者编辑
             operateSubmit: function () {
@@ -308,6 +307,27 @@
 
                 });
             },
+            //上传成功回调
+            getUrl(response, file, fileList) {
+                this.fileObj.push({
+                    "name" : file.name,
+                    "url" : response.resultObject
+                });
+
+                this.operateForm.logo = JSON.stringify(this.fileObj);
+            },
+            photoFeed(row){
+                try {
+                    let lo = JSON.parse(row.logo);
+                    for (let i = 0; i<lo.length;i++) {
+                        lo[i].url = "http://119.23.246.140"+lo[i].url;
+                        this.fileList2.push(lo[i])
+                    }
+                }catch(err) {
+                    return false;
+                }
+
+            }
         },
         mounted() {
             this.getBrands();

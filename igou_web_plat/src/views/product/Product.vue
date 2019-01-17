@@ -302,7 +302,8 @@
                             //NProgress.start();
                             this.operateForm.productTypeId = this.operateForm.path.pop();
                             let para = Object.assign({}, this.operateForm);
-                            // para.birth = (!para.birth || para.birth == '') ? '' : util.formatDate.format(new Date(para.birth), 'yyyy-MM-dd');
+                            para.onSaleTime = (!para.onSaleTime || para.onSaleTime == '') ? '' : util.formatDate.format(new Date(para.onSaleTime), 'yyyy-MM-dd hh:mm');
+                            para.offSaleTime = (!para.offSaleTime || para.offSaleTime == '') ? '' : util.formatDate.format(new Date(para.offSaleTime), 'yyyy-MM-dd hh:mm');
                             //后台根据id是否为null判断选择操作
                                 this.$http.post("/services/product/product/save",para).then((res) => {
                                     this.addLoading = false;
