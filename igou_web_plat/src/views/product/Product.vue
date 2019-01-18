@@ -41,7 +41,15 @@
             </el-table-column>
             <el-table-column prop="minPrice" label="最低价" min-width="100" sortable>
             </el-table-column>
-            <el-table-column prop="saleCount" label="销量" min-width="100" sortable>
+            <el-table-column prop="minPrice" label="最低价" min-width="100" sortable>
+            </el-table-column>
+            <el-table-column prop="state" label="状态" min-width="100" sortable>
+                <template slot-scope="scope">
+                    <el-tag
+                            :type="scope.row.state === 1 ? 'primary' : 'warning'"
+                            disable-transitions>{{scope.row.state === 1 ? '已上架':'未上架'}}
+                    </el-tag>
+                </template>
             </el-table-column>
             <el-table-column prop="viewCount" label="浏览量" min-width="100" sortable>
             </el-table-column>
@@ -51,8 +59,11 @@
             </el-table-column>
             <el-table-column prop="commentScore" label="评分" min-width="100" sortable>
             </el-table-column>
-            <el-table-column label="操作" width="150" fixed="right">
+            <el-table-column label="操作" width="230" fixed="right">
                 <template slot-scope="scope">
+                    <el-button type="primary" size="small" @click="handleUpdate(scope.$index, scope.row)">
+                        {{scope.row.state === 1 ? '下架':'上架'}}
+                    </el-button>
                     <el-button size="small" @click="handleAddEdit(scope.$index, scope.row)">编辑</el-button>
                     <el-button type="danger" size="small" @click="handleDel(scope.$index, scope.row)">删除</el-button>
                 </template>
@@ -116,33 +127,43 @@
 
                     </div>
                 </el-form-item>
+                <el-form-item label="描述">
+                    <el-input type="textarea" :rows="2"
+                              v-model="operateForm.productExt.description"></el-input>
+                </el-form-item>
+                <el-form-item label="商品详情">
+                    <template>
+                        <vue-wangeditor ref="editor" id="editor" v-model="operateForm.productExt.richContent" style="width: 800px"></vue-wangeditor>
+                    </template>
+                </el-form-item>
 
-                <el-form-item label="上架时间">
-                    <div class="block">
-                        <el-date-picker
-                                v-model="operateForm.onSaleTime"
-                                type="datetime"
-                                @change="getOnSaleTime"
-                                placeholder="选择上架时间">
-                        </el-date-picker>
-                    </div>
-                </el-form-item>
-                <el-form-item label="下架时间">
-                    <div class="block">
-                        <el-date-picker
-                                v-model="operateForm.offSaleTime"
-                                type="datetime"
-                                @change="getOffSaleTime"
-                                placeholder="选择下架时间">
-                        </el-date-picker>
-                    </div>
-                </el-form-item>
-                <!--<el-form-item label="生日">-->
-                <!--<el-date-picker type="date" placeholder="选择日期" v-model="operateForm.birth"></el-date-picker>-->
-                <!--</el-form-item>-->
-                <!--<el-form-item label="地址">-->
-                <!--<el-input type="textarea" v-model="operateForm.addr"></el-input>-->
-                <!--</el-form-item>-->
+                <!--<el-form-item label=" 上架时间
+                        ">-->
+                        <!--<div class="block">-->
+                        <!--<el-date-picker-->
+                        <!--v-model="operateForm.onSaleTime"-->
+                        <!--type="datetime"-->
+                        <!--@change="getOnSaleTime"-->
+                        <!--placeholder="选择上架时间">-->
+                        <!--</el-date-picker>-->
+                        <!--</div>-->
+                        <!--</el-form-item>-->
+                        <!--<el-form-item label="下架时间">-->
+                        <!--<div class="block">-->
+                        <!--<el-date-picker-->
+                        <!--v-model="operateForm.offSaleTime"-->
+                        <!--type="datetime"-->
+                        <!--@change="getOffSaleTime"-->
+                        <!--placeholder="选择下架时间">-->
+                        <!--</el-date-picker>-->
+                        <!--</div>-->
+                        <!--</el-form-item>-->
+                        <!--<el-form-item label="生日">-->
+                        <!--<el-date-picker type="date" placeholder="选择日期" v-model="operateForm.birth"></el-date-picker>-->
+                        <!--</el-form-item>-->
+                        <!--<el-form-item label="地址">-->
+                        <!--<el-input type="textarea" v-model="operateForm.addr"></el-input>-->
+                        <!--</el-form-item>-->
             </el-form>
             <div slot="footer" class="dialog-footer">
                 <el-button @click.native="operateFormVisible = false">取消</el-button>
@@ -154,9 +175,9 @@
 
 <script>
     import util from '../../common/js/util'
+    import vueWangeditor from 'vue-wangeditor'
     //import NProgress from 'nprogress'
     import {getProductListPage, removeProduct, batchRemoveProduct, editProduct, addProduct} from '../../api/api';
-
     export default {
         data() {
             return {
@@ -166,14 +187,14 @@
                 products: [],
                 productTypes: [],
                 productsProps: {
-                    value : 'id',
+                    value: 'id',
                     label: 'name',
-                    children : 'children'
+                    children: 'children'
                 },
-                brands : [],
-                brandProps : {
-                    value : 'id',
-                    label : 'name'
+                brands: [],
+                brandProps: {
+                    value: 'id',
+                    label: 'name'
                 },
                 total: 0,
                 page: 1,
@@ -196,7 +217,7 @@
                 },
                 //操作界面数据
                 operateForm: {
-                    id : '',
+                    id: '',
                     name: '',
                     subName: '',
                     code: '',
@@ -204,7 +225,12 @@
                     productTypeId: '',
                     brandId: '',
                     onSaleTime: '',
-                    offSaleTime: ''
+                    offSaleTime: '',
+                    productExt:{
+                        richContent:'',
+                        description:''
+                    }
+
                 }
 
             }
@@ -259,39 +285,78 @@
                         this.getProducts();
                     });
                 }).catch(() => {
-
+                    this.$message({
+                        message: '删除异常',
+                        type: 'error'
+                    });
                 });
             },
             //显示操作界面
-            handleAddEdit: function (index,row) {
+            handleAddEdit: function (index, row) {
                 //index为编辑时传入的行号，从零开始，新增时我传入-1来区分操作
-                if(index != -1) {
+                if (index != -1) {
                     //编辑操作，回显数据
                     this.getProductTypes();
                     this.getBrands();
                     //级联回显处理
                     var path = row.productType.path;
                     var arr = [];
-                    arr = path.split(".").splice(1,3);
-                    for(let i = 0;i<arr.length;i++) {
+                    arr = path.split(".").splice(1, 3);
+                    for (let i = 0; i < arr.length; i++) {
                         arr[i] = parseInt(arr[i]);
                     }
                     this.operateForm = Object.assign({}, row);
                     this.operateForm.path = arr;
-                }else {
+                    this.operateForm.productExt.richContent = row.productExt.richContent;
+                } else {
                     //新增操作
                     this.operateForm = {
-                        id : null,
+                        id: null,
                         name: '',
                         subName: '',
                         code: '',
                         path: [],
                         brandId: '',
                         onSaleTime: '',
-                        offSaleTime: ''
+                        offSaleTime: '',
+                        productExt:{
+                            richContent:'',
+                            description:''
+                        }
                     };
                 }
                 this.operateFormVisible = true;
+            },
+            handleUpdate(index, row) {
+                let flag = 0;
+                if (row.state === 1) {
+                    //下架操作
+                    flag = 0;
+                } else {
+                    //上架操作
+                    flag = 1;
+                }
+                let para = {
+                    id: row.id,
+                    state: flag
+                };
+                this.$confirm('确认提交吗？', '提示', {}).then(() => {
+                    this.$http.post("/services/product/product/save", para).then((res) => {
+                        this.addLoading = false;
+                        //NProgress.done();
+                        this.$message({
+                            message: '操作成功',
+                            type: 'success'
+                        });
+                        this.getProducts();
+                    }).catch(() => {
+                        this.$message({
+                            message: '操作失败',
+                            type: 'error'
+                        });
+                        this.getProducts();
+                    })
+                });
             },
             //新增或者编辑
             operateSubmit: function () {
@@ -301,21 +366,24 @@
                             this.addLoading = true;
                             //NProgress.start();
                             this.operateForm.productTypeId = this.operateForm.path.pop();
+                            //获取富文本框中输入的内容
+                            this.operateForm.productExt.richContent = this.$refs.editor.getHtml(this.operateForm.productExt.richContent);
                             let para = Object.assign({}, this.operateForm);
                             para.onSaleTime = (!para.onSaleTime || para.onSaleTime == '') ? '' : util.formatDate.format(new Date(para.onSaleTime), 'yyyy-MM-dd hh:mm');
                             para.offSaleTime = (!para.offSaleTime || para.offSaleTime == '') ? '' : util.formatDate.format(new Date(para.offSaleTime), 'yyyy-MM-dd hh:mm');
+                            console.debug();
                             //后台根据id是否为null判断选择操作
-                                this.$http.post("/services/product/product/save",para).then((res) => {
-                                    this.addLoading = false;
-                                    //NProgress.done();
-                                    this.$message({
-                                        message: '提交成功',
-                                        type: 'success'
-                                    });
-                                    this.$refs['operateForm'].resetFields();
-                                    this.operateFormVisible = false;
-                                    this.getProducts();
+                            this.$http.post("/services/product/product/save", para).then((res) => {
+                                this.addLoading = false;
+                                //NProgress.done();
+                                this.$message({
+                                    message: '提交成功',
+                                    type: 'success'
                                 });
+                                this.$refs['operateForm'].resetFields();
+                                this.operateFormVisible = false;
+                                this.getProducts();
+                            });
                         });
                     }
                 });
@@ -352,30 +420,33 @@
                         if (data != null) {
                             this.productTypes = data;
                         }
-                })
+                    })
             },
             //获取所有品牌
-            getBrands : function () {
+            getBrands: function () {
                 this.$http.get("/services/product/brand/treeData")
                     .then(({data}) => {
-                        if(data != null) {
+                        if (data != null) {
                             this.brands = data;
                         }
-                })
+                    })
             },
             //时间格式化
             getOnSaleTime(val) {
-                this.operateForm.onSaleTime =val;
+                this.operateForm.onSaleTime = val;
             },
             //时间格式化
             getOffSaleTime(val) {
-                this.operateForm.offSaleTime =val;
+                this.operateForm.offSaleTime = val;
             }
         },
         mounted() {
             this.getProducts();
             this.getProductTypes();
             this.getBrands();
+        },
+        components: {
+            vueWangeditor
         }
     }
 

@@ -9,6 +9,7 @@
                             node-key="id"
                             :props="defaultProps"
                             @node-contextmenu="rightClick"
+                            show-checkbox
                             @node-click="leftClick"
                             ref="tree"
                     >
@@ -205,9 +206,6 @@
                 } else {
                     this.menuVisible = !this.menuVisible;
                 }
-                document.addEventListener('click', (e) => {
-                    this.menuVisible = false;
-                })
                 let menu = document.querySelector("#rightClickMenu");
                 /* 菜单定位基于鼠标点击位置 */
                 menu.style.left = event.clientX - 230 + "px";
@@ -215,7 +213,8 @@
                 menu.style.position = "absolute"; // 为新创建的DIV指定绝对定位
                 menu.style.width = 160 + "px";
             },
-            leftClick() {
+            leftClick(event, object, value, element) {
+
                 //判断菜单是否为显式状态
                 if (this.menuVisible) {
                     this.menuVisible = !this.menuVisible;
@@ -232,7 +231,7 @@
                         type: 'warning'
                     }).then(() => {
                         this.listLoading = true;
-                        //NProgress.start();
+                        //NProgress.start();.
                         this.$http.delete("/services/product/productType/delete/" + obj.id).then((res) => {
                             this.listLoading = false;
                             //NProgress.done();
@@ -255,8 +254,30 @@
                 } else {
                     this.$confirm('该节点含有子节点?', '提示', {
                         type: 'warning'
-                    })
-                    console.debug(obj.path)
+                    }).then(() => {
+                        let current = this.$refs.tree.getCurrentNode().id
+                        let nodes = this.$refs.tree.getCheckedNodes(true);
+                        let nodesIds = [];
+                        for (let i = 0; i < nodes.length; i++) {
+                            if (nodes[i].id) {
+                                nodesIds.push(nodes[i].id)
+                            }
+                        }
+                        nodesIds.push(current);
+                        console.debug(nodesIds)
+                        let ids = nodesIds.toString();
+                        this.$http.delete("/services/product/productType/deleteBatch?ids=" + ids).then((res) => {
+                            this.listLoading = false;
+                            //NProgress.done();
+                            this.$message({
+                                message: '删除成功',
+                                type: 'success'
+                            });
+                            this.editDivVisible = false;
+                            this.getDataTrees();
+                        });
+                    });
+
                 }
 
 
@@ -288,6 +309,7 @@
                         //修改分类
                         let obj = this.DATA;
                         this.form = {
+                            id: obj.id,
                             name: obj.name,
                             description: obj.description,
                             sortIndex: obj.sortIndex,
@@ -339,13 +361,14 @@
                     key: Date.now()
                 });
             },
+            //提交保存子标签
             submitSubForm() {
                 this.$refs.subForm.validate((valid) => {
                     if (valid) {
                         this.$confirm('确认提交吗？', '提示', {}).then(() => {
                             this.addLoading = true;
                             let para = this.subForm.children;
-                            this.$http.post("/services/product/productType/saveBatch",para).then((res) => {
+                            this.$http.post("/services/product/productType/saveBatch", para).then((res) => {
                                 this.addLoading = false;
                                 this.$message({
                                     message: '提交成功',
@@ -364,7 +387,7 @@
                     if (valid) {
                         this.$confirm('确认提交吗？', '提示', {}).then(() => {
                             this.addLoading = true;
-                            let para  = Object.assign({}, this.form);
+                            let para = Object.assign({}, this.form);
                             this.$http.post("/services/product/productType/save", para).then((res) => {
                                 this.addLoading = false;
                                 //NProgress.done();

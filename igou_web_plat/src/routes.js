@@ -4,7 +4,7 @@ import Home from './views/Home.vue'
 import Brand from './views/product/Brand.vue'
 import Product from './views/product/Product.vue'
 import ProductType from './views/product/ProductType.vue'
-import Form from './views/nav1/Form.vue'
+import productProperty from './views/product/productProperty.vue'
 import user from './views/nav1/user.vue'
 import Page4 from './views/nav2/Page4.vue'
 import Page5 from './views/nav2/Page5.vue'
@@ -35,7 +35,7 @@ let routes = [
             { path: '/product', component: Product, name: '商品管理' },
             { path: '/brand', component: Brand, name: '商品品牌管理' },
             { path: '/productType', component: ProductType, name: '商品类别管理' },
-            { path: '/form', component: Form, name: 'Form' },
+            { path: '/form', component: productProperty, name: '商品属性管理' },
             { path: '/user', component: user, name: '列表' },
         ]
     },

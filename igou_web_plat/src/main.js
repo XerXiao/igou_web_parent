@@ -13,6 +13,7 @@ import routes from './routes'
 // import Mock from './mock'
 // Mock.bootstrap();
 import 'font-awesome/css/font-awesome.min.css'
+
 //引入axios
 import axios from 'axios'
 //easymock 模拟数据
