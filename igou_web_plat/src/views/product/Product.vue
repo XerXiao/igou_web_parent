@@ -17,11 +17,21 @@
                 <el-form-item>
                     <el-button type="primary" @click="handleAddEdit(-1,null)">新增</el-button>
                 </el-form-item>
+                <el-form-item>
+                    <el-button type="primary" @click="configViewProperties">配置显示属性</el-button>
+                </el-form-item>
+                <el-form-item>
+                    <el-button type="primary" @click="configSkuProperties">配置Sku属性</el-button>
+                </el-form-item>
             </el-form>
         </el-col>
 
         <!--列表-->
-        <el-table :data="products" highlight-current-row v-loading="listLoading" @selection-change="selsChange"
+        <el-table :data="products"
+                  highlight-current-row v-loading="listLoading"
+                  @selection-change="selsChange"
+                  @row-click="handleRowClick"
+                  @select="handleRowSelect"
                   style="width: 100%;">
             <el-table-column type="selection" width="55">
             </el-table-column>
@@ -133,41 +143,121 @@
                 </el-form-item>
                 <el-form-item label="商品详情">
                     <template>
-                        <vue-wangeditor ref="editor" id="editor" v-model="operateForm.productExt.richContent" style="width: 800px"></vue-wangeditor>
+                        <vue-wangeditor ref="editor" id="editor"
+                                        v-model="operateForm.productExt.richContent"></vue-wangeditor>
                     </template>
                 </el-form-item>
 
                 <!--<el-form-item label=" 上架时间
                         ">-->
-                        <!--<div class="block">-->
-                        <!--<el-date-picker-->
-                        <!--v-model="operateForm.onSaleTime"-->
-                        <!--type="datetime"-->
-                        <!--@change="getOnSaleTime"-->
-                        <!--placeholder="选择上架时间">-->
-                        <!--</el-date-picker>-->
-                        <!--</div>-->
-                        <!--</el-form-item>-->
-                        <!--<el-form-item label="下架时间">-->
-                        <!--<div class="block">-->
-                        <!--<el-date-picker-->
-                        <!--v-model="operateForm.offSaleTime"-->
-                        <!--type="datetime"-->
-                        <!--@change="getOffSaleTime"-->
-                        <!--placeholder="选择下架时间">-->
-                        <!--</el-date-picker>-->
-                        <!--</div>-->
-                        <!--</el-form-item>-->
-                        <!--<el-form-item label="生日">-->
-                        <!--<el-date-picker type="date" placeholder="选择日期" v-model="operateForm.birth"></el-date-picker>-->
-                        <!--</el-form-item>-->
-                        <!--<el-form-item label="地址">-->
-                        <!--<el-input type="textarea" v-model="operateForm.addr"></el-input>-->
-                        <!--</el-form-item>-->
+                <!--<div class="block">-->
+                <!--<el-date-picker-->
+                <!--v-model="operateForm.onSaleTime"-->
+                <!--type="datetime"-->
+                <!--@change="getOnSaleTime"-->
+                <!--placeholder="选择上架时间">-->
+                <!--</el-date-picker>-->
+                <!--</div>-->
+                <!--</el-form-item>-->
+                <!--<el-form-item label="下架时间">-->
+                <!--<div class="block">-->
+                <!--<el-date-picker-->
+                <!--v-model="operateForm.offSaleTime"-->
+                <!--type="datetime"-->
+                <!--@change="getOffSaleTime"-->
+                <!--placeholder="选择下架时间">-->
+                <!--</el-date-picker>-->
+                <!--</div>-->
+                <!--</el-form-item>-->
+                <!--<el-form-item label="生日">-->
+                <!--<el-date-picker type="date" placeholder="选择日期" v-model="operateForm.birth"></el-date-picker>-->
+                <!--</el-form-item>-->
+                <!--<el-form-item label="地址">-->
+                <!--<el-input type="textarea" v-model="operateForm.addr"></el-input>-->
+                <!--</el-form-item>-->
             </el-form>
             <div slot="footer" class="dialog-footer">
                 <el-button @click.native="operateFormVisible = false">取消</el-button>
                 <el-button type="primary" @click.native="operateSubmit" :loading="addLoading">提交</el-button>
+            </div>
+        </el-dialog>
+
+        <!--新增显示属性界面-->
+        <el-dialog title="配置显示属性"
+                   :visible.sync="propertiesFormVisible"
+                   :close-on-click-modal="false"
+        >
+            <el-form>
+                <el-row :gutter="12">
+                    <el-col :span="12" v-for="(propertie,index) in this.properties"
+                            style="padding-bottom: 10px">
+                        <el-card shadow="hover">
+                            <el-form-item :label="propertie.name">
+                                <el-input auto-complete="off" v-model="propertie.selectValue"></el-input>
+                            </el-form-item>
+                        </el-card>
+                    </el-col>
+                    <el-card v-show="this.properties.length === 0 ? true:false">
+                        暂无显示属性
+                    </el-card>
+                </el-row>
+            </el-form>
+
+            <div slot="footer" class="dialog-footer">
+                <el-button @click.native="propertiesFormVisible = false">取消</el-button>
+                <el-button type="primary" @click.native="viewPropertiesSubmit" :loading="addLoading">提交</el-button>
+            </div>
+        </el-dialog>
+        <!--新增Sku属性界面-->
+        <el-dialog title="配置Sku属性"
+                   :visible.sync="skuPropertiesFormVisible"
+                   :close-on-click-modal="false"
+        >
+            <el-form>
+                <div style="height: 350px;overflow: scroll;overflow-x: hidden;overflow-y: auto">
+                    <el-row :gutter="12">
+                        <el-col :span="12" v-for="(propertie,index) in this.skuProperties"
+                                style="padding-bottom: 10px">
+                            <el-card shadow="hover">
+                                <el-form-item :label="propertie.name" :prop="propertie.name">
+                                    <div v-for="index in propertie.skuValues.length+1">
+                                        <el-input v-model="propertie.skuValues[index-1]">
+                                            <el-button slot="append" icon="el-icon-delete"
+                                                       @click="handleRemoveSkuValue(propertie.skuValues,index)"></el-button>
+                                        </el-input>
+
+                                    </div>
+                                </el-form-item>
+                            </el-card>
+                        </el-col>
+                        <el-card v-show="this.skuProperties.length === 0 ? true:false">
+                            暂无Sku属性
+                        </el-card>
+                    </el-row>
+                </div>
+
+                <el-table
+                        :data="dynamicTableDate"
+                        style="width: 100%"
+                        height="300"
+                        border
+                        :header-cell-style="{background:'#EEEEEE'}"
+                >
+                    <el-table-column v-for="(col,i) in this.tableHeader"
+                                     :prop="col"
+                                     :label="col"
+                                     min-width="200"
+
+
+                    >
+                    </el-table-column>
+                </el-table>
+
+            </el-form>
+
+            <div slot="footer" class="dialog-footer">
+                <el-button @click.native="skuPropertiesFormVisible = false">取消</el-button>
+                <el-button type="primary" @click.native="skuPropertiesSubmit" :loading="addLoading">提交</el-button>
             </div>
         </el-dialog>
     </section>
@@ -178,14 +268,20 @@
     import vueWangeditor from 'vue-wangeditor'
     //import NProgress from 'nprogress'
     import {getProductListPage, removeProduct, batchRemoveProduct, editProduct, addProduct} from '../../api/api';
+
     export default {
         data() {
             return {
                 filters: {
                     keyword: ''
                 },
+                //动态表格数据
+                dynamicTableDate: null,
+                tableHeader: [],
                 products: [],
                 productTypes: [],
+                properties: [],
+                skuProperties: [],
                 productsProps: {
                     value: 'id',
                     label: 'name',
@@ -200,7 +296,7 @@
                 page: 1,
                 listLoading: false,
                 sels: [],//列表选中列
-
+                currentRow: null,
                 editFormVisible: false,//编辑界面是否显示
                 editLoading: false,
                 editFormRules: {
@@ -209,6 +305,8 @@
                     ]
                 },
                 operateFormVisible: false,//新增界面是否显示
+                propertiesFormVisible: false,
+                skuPropertiesFormVisible: false,
                 addLoading: false,
                 operateFormRules: {
                     name: [
@@ -226,16 +324,71 @@
                     brandId: '',
                     onSaleTime: '',
                     offSaleTime: '',
-                    productExt:{
-                        richContent:'',
-                        description:''
+                    productExt: {
+                        richContent: '',
+                        description: ''
                     }
-
+                },
+                propertiesForm: {
+                    name: '',
+                    isSku: 0,
+                    typeId: ''
                 }
 
             }
         },
         methods: {
+            //单击删除添加的输入框
+            handleRemoveSkuValue(skuValues, index) {
+                skuValues.splice(index - 1, 1);
+            },
+            //sku属性输入时
+            handleSkuInputChange() {
+                this.skuProperties.skuValues.push({});
+            },
+            handleRowClick(row, event, column) {
+                this.propertiesForm.typeId = row.productTypeId;
+                this.currentRow = row;
+            },
+            handleRowSelect(selection, row) {
+                this.propertiesForm.typeId = row.productTypeId;
+                this.currentRow = row;
+            },
+            configViewProperties() {
+                if (this.currentRow === null) {
+                    //没有选择行
+                    this.$message({
+                        message: '请选择行再进行操作',
+                        type: 'warning'
+                    });
+                } else {
+                    //获取选中行id传递
+                    let productId = this.currentRow.id;
+                    this.$http.get("/services/product/specification/product/" + productId)
+                        .then(({data}) => {
+                            this.propertiesFormVisible = true;
+                            this.properties = data;
+                        })
+                }
+            },
+            configSkuProperties() {
+                if (this.currentRow === null) {
+                    //没有选择行
+                    this.$message({
+                        message: '请选择行再进行操作',
+                        type: 'warning'
+                    });
+                } else {
+                    //获取选中行id传递
+                    let productId = this.currentRow.id;
+                    this.$http.get("/services/product/specification/productSku/" + productId)
+                        .then(({data}) => {
+                            this.skuPropertiesFormVisible = true;
+                            this.skuProperties = data;
+                            this.tableHeader = [];
+                        })
+                }
+            },
             //性别显示转换
             formatSex: function (row, column) {
                 return row.sex == 1 ? '男' : row.sex == 0 ? '女' : '未知';
@@ -260,12 +413,6 @@
                         this.listLoading = false;
                         //NProgress.done();
                     });
-                // getUserListPage(para).then((res) => {
-                // 	this.total = res.data.total;
-                // 	this.users = res.data.users;
-                // 	this.listLoading = false;
-                // 	//NProgress.done();
-                // });
             },
             //删除
             handleDel: function (index, row) {
@@ -319,9 +466,9 @@
                         brandId: '',
                         onSaleTime: '',
                         offSaleTime: '',
-                        productExt:{
-                            richContent:'',
-                            description:''
+                        productExt: {
+                            richContent: '',
+                            description: ''
                         }
                     };
                 }
@@ -388,6 +535,28 @@
                     }
                 });
             },
+            viewPropertiesSubmit() {
+                //获取当前商品id
+                let id = this.currentRow.id;
+                let map = {
+                    productId: id,
+                    properties: this.properties
+                };
+                this.$http.post("/services/product/product/saveViewProperties", map)
+                    .then(({data}) => {
+                        this.addLoading = false;
+                        this.$message({
+                            message: '提交成功',
+                            type: 'success'
+                        });
+                        this.$refs['propertiesForm'].resetFields();
+                        this.propertiesFormVisible = false;
+                        this.getProducts();
+                    })
+            },
+            skuPropertiesFormVisible() {
+
+            },
             selsChange: function (sels) {
                 this.sels = sels;
             },
@@ -447,6 +616,33 @@
         },
         components: {
             vueWangeditor
+        },
+        watch: {
+            skuProperties: {
+                handler(currentVal, oldVal) {
+                    // 循环每一个商品属性
+                    //过滤没有值的选项
+                    currentVal = currentVal.filter(item => item.skuValues.length > 0);
+                    let o = Object.keys(currentVal).reduce((result, key) => {
+                        // 循环属性的每一个值
+                        return currentVal[key].skuValues.reduce((acc, value) => {
+                            let name = currentVal[key].name;
+                            // 对于第一个属性
+                            if (!result.length) {
+                                // 将数值转化为对象格式
+                                return acc.concat({[name]: value});
+                            }
+                            // 对于第一个之后的属性，将新的属性和值添加到已有结果，并进行拼接。
+                            return acc.concat(result.map(ele => (Object.assign({}, ele, {[name]: value}))));
+                        }, []);
+                    }, []);
+                    this.dynamicTableDate = o;
+                    let header = Object.keys(o[0]);
+                    this.tableHeader = header;
+                },
+                //是否监视该对象深层变化
+                deep: true
+            }
         }
     }
 
