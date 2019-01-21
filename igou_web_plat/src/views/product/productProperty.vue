@@ -8,8 +8,6 @@
                         :data="productTypes"
                         node-key="id"
                         :props="defaultProps"
-                        @node-contextmenu="rightClick"
-                        show-checkbox
                         @node-click="leftClick"
                         ref="tree"
                 >
@@ -24,15 +22,29 @@
                         <el-card class="box-card">
                             <div slot="header" class="clearfix">
                                 <span>显示属性</span>
-                                <el-button style="float: right; padding: 3px 0" type="text"><i
+                                <el-button style="float: right; padding: 3px 0 0 10px" type="text"
+                                           @click="changeSubmit"><i
+                                        class="el-icon-circle-check"></i>&nbsp;保存修改
+                                </el-button>
+
+                                <el-button style="float: right; padding: 3px 0" type="text"
+                                           @click="handleAddViewPropertie"><i
                                         class="el-icon-circle-plus"></i>&nbsp;添加显示属性
                                 </el-button>
+
                             </div>
                             <el-row :gutter="12">
                                 <el-col :span="6" v-for="(propertie,index) in this.viewProperties"
                                         style="padding-bottom: 10px">
-                                    <el-card shadow="hover">
-                                        {{propertie.name}}
+                                    <el-card shadow="hover" style="line-height: 40px;" class="card">
+                                        <el-input v-model="propertie.name" class="change-input">
+                                        </el-input>
+                                        <div style="float: right;" class="change-status">
+                                            <!--<el-button type="primary" @click="handleViewCardEditBtnClick(index)"-->
+                                            <!--icon="el-icon-edit"></el-button>-->
+                                            <el-button type="primary" @click="handleViewCardDelBtnClick(index)"
+                                                       icon="el-icon-delete"></el-button>
+                                        </div>
                                     </el-card>
                                 </el-col>
                                 <el-card v-show="this.viewProperties.length === 0 ? true:false">
@@ -53,7 +65,7 @@
                             <el-row :gutter="12">
                                 <el-col :span="6" v-for="(propertie,index) in this.skuProperties"
                                         style="padding-bottom: 10px">
-                                    <el-card shadow="always">
+                                    <el-card shadow="hover">
                                         {{propertie.name}}
                                     </el-card>
                                 </el-col>
@@ -71,20 +83,20 @@
 
 
         <!--新增属性选项界面-->
-        <el-dialog title="新增" :visible.sync="operatePropertysOptionFormVisible" :close-on-click-modal="false">
-            <el-form :model="operatePropertysOptionForm" label-width="80px" ref="operatePropertysOptionForm">
-                <el-form-item label="名称" prop="optionName" :rules="operatePropertysOptionFormRules">
-                    <el-input v-model="operatePropertysOptionForm.optionName" auto-complete="off"></el-input>
-                </el-form-item>
-                <el-form-item label="排序">
-                    <el-input v-model="operatePropertysOptionForm.index" auto-complete="off"></el-input>
-                </el-form-item>
-            </el-form>
-            <div slot="footer" class="dialog-footer">
-                <el-button @click.native="operatePropertysOptionFormVisible = false">取消</el-button>
-                <el-button type="primary" @click.native="addPropertysOptinoSubmit" :loading="addLoading">提交</el-button>
-            </div>
-        </el-dialog>
+        <!--<el-dialog title="新增" :visible.sync="operatePropertysOptionFormVisible" :close-on-click-modal="false">-->
+        <!--<el-form :model="operatePropertysOptionForm" label-width="80px" ref="operatePropertysOptionForm">-->
+        <!--<el-form-item label="名称" prop="optionName" >-->
+        <!--<el-input v-model="operatePropertysOptionForm.optionName" auto-complete="off"></el-input>-->
+        <!--</el-form-item>-->
+        <!--<el-form-item label="排序">-->
+        <!--<el-input v-model="operatePropertysOptionForm.index" auto-complete="off"></el-input>-->
+        <!--</el-form-item>-->
+        <!--</el-form>-->
+        <!--<div slot="footer" class="dialog-footer">-->
+        <!--<el-button @click.native="operatePropertysOptionFormVisible = false">取消</el-button>-->
+        <!--<el-button type="primary" @click.native="addPropertysOptinoSubmit" :loading="addLoading">提交</el-button>-->
+        <!--</div>-->
+        <!--</el-dialog>-->
     </section>
 </template>
 
@@ -96,14 +108,24 @@
     export default {
         data() {
             return {
+                DATA: null,
+                NODE: null,
+                iconShow: false,
+                inputVisible: false,
+                //记录被删除元素
+                CardDelArr:[],
+                test: [],
+                tree: {},
                 //双击显示隐藏选项标志位
                 flag: false,
                 //存放商品类别信息
                 productTypes: [],
+                viewPropertiesLength : 0,
                 //存放类别对应属性信息
                 properties: [],
                 //存放显示属性信息
                 viewProperties: [],
+                addViewProperties: [],
                 //存放sku属性信息
                 skuProperties: [],
                 //默认展开的面板
@@ -113,6 +135,8 @@
                     label: 'name',
                     value: 'id'
                 },
+                //属性操作按钮是否显示
+                mouseHover: false,
                 operatePropertysFormVisible: false,
                 filters: {},
                 propertys: [],
@@ -137,20 +161,96 @@
             }
         },
         methods: {
+            //输入后弹出保存提示
+            changeSubmit() {
+                this.$confirm('确认保存修改?', '提示', {
+                    type: 'warning'
+                }).then(() => {
+                    this.listLoading = true;
+                    //
+                    let arr = [];
+                    let  len = this.viewProperties.length - this.viewPropertiesLength;
+                    if(len > 0) {
+                        //新增属性
+                        for(let i= 0;i<len;i++) {
+                            arr.push(this.viewProperties.pop());
+                        }
+                        //NProgress.start();
+                        let para = Object.assign({}, arr);
+                        this.$http.post("/services/product/specification/save", para)
+                            .then(({data}) => {
+                                this.listLoading = false;
+                                //NProgress.done();
+                                this.$message({
+                                    message: '保存成功',
+                                    type: 'success'
+                                });
+                                this.getPropertys();
+                            });
+                    }else {
+                        //删除属性
+                        let para = Object.assign({}, this.CardDelArr);
+                        this.$http.delete("/services/product/specification/delete?ids="+JSON.stringify(para))
+                            .then(({data}) => {
+                                this.listLoading = false;
+                                //NProgress.done();
+                                this.$message({
+                                    message: '删除成功',
+                                    type: 'success'
+                                });
+                                this.getPropertys();
+                                //操作完成清空记录删除数据数组
+                                this.CardDelArr = [];
+                            });
+                    }
+
+                })
+            },
+            handleAddViewPropertie() {
+                this.viewProperties.push({
+                    id: null,
+                    name: '',
+                    isSku: 0,
+                    productTypeId: this.DATA.data.id,
+                    isDeleted: 0,
+                    selectValue: null,
+                    skuValues:[]
+                })
+            },
+            //
+            handleViewCardEditBtnClick(index) {
+                this.inputShow = true;
+            },
+            handleViewCardDelBtnClick(index) {
+                //记录删除卡片数据
+                this.CardDelArr.push(index);
+                this.viewProperties.splice(index, 1);
+            },
+            //鼠标悬浮属性卡片事件
+            handleMouseIn() {
+                this.mouseHover = true;
+            },
+            //鼠标移出卡片事件
+            handleMouseOut() {
+                this.mouseHover = false;
+            },
             //左键单击节点事件：
             leftClick(event, object, value, element) {
                 //判断被单击节点是否为叶子节点
                 let child = object.data.children;
                 if (child === null) {
                     this.operatePropertysFormVisible = true;
-
                     //根据单击节点获取其已有的显示属性
                     let productTypeId = object.data.id;
+
+                    this.DATA = object;
                     //显示属性
                     this.$http.get("/services/product/specification/viewList/" + productTypeId)
                         .then(({data}) => {
                             this.viewProperties = data;
-                        })
+                            //记录属性长度
+                            this.viewPropertiesLength = this.viewProperties.length;
+                        });
                     //sku属性
                     this.$http.get("/services/product/specification/skuList/" + productTypeId)
                         .then(({data}) => {
@@ -368,4 +468,24 @@
 </script>
 
 <style scoped>
+
+    .card .change-status {
+        display: none;
+    }
+
+    .card .change-input {
+        width: 100%;
+    }
+
+    .card:hover .change-status {
+        display: block;
+    }
+
+    .card:hover .change-input {
+        width: 60%;
+    }
+
+    .el-icon-edit:hover {
+        cursor: pointer;
+    }
 </style>
