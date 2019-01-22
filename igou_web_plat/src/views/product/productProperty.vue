@@ -42,7 +42,8 @@
                                         <div style="float: right;" class="change-status">
                                             <!--<el-button type="primary" @click="handleViewCardEditBtnClick(index)"-->
                                             <!--icon="el-icon-edit"></el-button>-->
-                                            <el-button type="primary" @click="handleViewCardDelBtnClick(index)"
+                                            <el-button type="primary"
+                                                       @click="handleViewCardDelBtnClick(index,propertie)"
                                                        icon="el-icon-delete"></el-button>
                                         </div>
                                     </el-card>
@@ -50,11 +51,41 @@
                                 <el-card v-show="this.viewProperties.length === 0 ? true:false">
                                     暂无显示属性
                                 </el-card>
-                            </el-row>
 
-                            <el-badge :value="12" class="item" style="">
-                                <el-button size="small"><i class="el-icon-delete"></i></el-button>
-                            </el-badge>
+                            </el-row>
+                            <el-popover
+                                    placement="right"
+                                    width="400"
+                                    v-show="delInfoShow"
+                                    trigger="hover">
+                                    <el-table :data="delCardArr">
+                                        <el-table-column property="name" label="属性名称"></el-table-column>
+                                        <el-table-column>
+                                            <template slot-scope="scope">
+                                                <el-button type="success" size="small"
+                                                           style="float: right"
+                                                           @click="reBackCard(scope.$index,scope.row)">恢复
+                                                </el-button>
+                                            </template>
+                                        </el-table-column>
+                                        <el-table-column>
+                                            <template slot="header" slot-scope="scope">
+                                                <el-button type="danger" style="height: 30px;line-height: 0px">删除属性</el-button>
+                                            </template>
+                                        </el-table-column>
+
+                                    </el-table>
+
+
+
+
+                                <el-badge slot="reference"
+                                          :value="delCardArr.length"
+                                          class="item"
+                                          style="float: right;padding-bottom: 10px">
+                                    <el-button size="small"><i class="el-icon-delete"></i></el-button>
+                                </el-badge>
+                            </el-popover>
                         </el-card>
                     </el-row>
 
@@ -117,18 +148,22 @@
                 iconShow: false,
                 inputVisible: false,
                 //记录被删除元素
-                CardDelArr:[],
+                CardDelArr: [],
                 test: [],
                 tree: {},
                 //双击显示隐藏选项标志位
                 flag: false,
                 //存放商品类别信息
                 productTypes: [],
-                viewPropertiesLength : 0,
+                viewPropertiesLength: 0,
                 //存放类别对应属性信息
                 properties: [],
                 //存放显示属性信息
                 viewProperties: [],
+                //存放准备删除的属性数组
+                delCardArr: [],
+                //删除信息图标显示与否标志
+                delInfoShow:false,
                 addViewProperties: [],
                 //存放sku属性信息
                 skuProperties: [],
@@ -173,15 +208,15 @@
                     this.listLoading = true;
                     //
                     let arr = [];
-                    let  len = this.viewProperties.length - this.viewPropertiesLength;
-                    if(len > 0) {
+                    let len = this.viewProperties.length - this.viewPropertiesLength;
+                    if (len > 0) {
                         //新增属性
-                        for(let i= 0;i<len;i++) {
+                        for (let i = 0; i < len; i++) {
                             arr.push(this.viewProperties.pop());
                         }
                         //NProgress.start();
                         let para = Object.assign(arr);
-                        this.$http.post("/services/product/specification/save",para)
+                        this.$http.post("/services/product/specification/save", para)
                             .then(({data}) => {
                                 this.listLoading = false;
                                 //NProgress.done();
@@ -191,10 +226,10 @@
                                 });
                                 this.viewProperties.push(para);
                             });
-                    }else {
+                    } else {
                         //删除属性
                         let para = Object.assign({}, this.CardDelArr);
-                        this.$http.delete("/services/product/specification/delete?ids="+JSON.stringify(para))
+                        this.$http.delete("/services/product/specification/delete?ids=" + JSON.stringify(para))
                             .then(({data}) => {
                                 this.listLoading = false;
                                 //NProgress.done();
@@ -218,17 +253,25 @@
                     productTypeId: this.DATA.data.id,
                     isDeleted: 0,
                     selectValue: null,
-                    skuValues:[]
+                    skuValues: []
                 })
             },
             //
             handleViewCardEditBtnClick(index) {
                 this.inputShow = true;
             },
-            handleViewCardDelBtnClick(index) {
+            //恢复删除数据
+            reBackCard(index, row) {
+                this.viewProperties.push(row);
+                this.delCardArr.splice(index,1)
+            },
+            handleViewCardDelBtnClick(index, row) {
                 //记录删除卡片数据
                 this.CardDelArr.push(index);
                 this.viewProperties.splice(index, 1);
+                //记录备删除数据
+                this.delCardArr.push(row);
+                this.delInfoShow = true;
             },
             //鼠标悬浮属性卡片事件
             handleMouseIn() {

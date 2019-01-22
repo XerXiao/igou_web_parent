@@ -72,7 +72,10 @@
             </el-table-column>
             <el-table-column label="操作" width="230" fixed="right">
                 <template slot-scope="scope">
-                    <el-button type="primary" size="small" @click="handleOnSaleOrOffSingle(scope.$index, scope.row)">
+                    <el-button type="primary" size="small"
+                               @click="handleOnSaleOrOffSingle(scope.$index, scope.row)"
+                               :disabled="sels.length > 1"
+                    >
                         {{scope.row.state === 1 ? '下架':'上架'}}
                     </el-button>
                     <el-button size="small" @click="handleAddEdit(scope.$index, scope.row)">编辑</el-button>
@@ -145,10 +148,22 @@
                               v-model="operateForm.productExt.description"></el-input>
                 </el-form-item>
                 <el-form-item label="商品详情">
+                    <!--<template>-->
+                    <!--<vue-wangeditor ref="editor" id="editor"-->
+                    <!--v-model="operateForm.productExt.richContent"></vue-wangeditor>-->
+                    <!--</template>-->
+
                     <template>
-                        <vue-wangeditor ref="editor" id="editor"
-                                        v-model="operateForm.productExt.richContent"></vue-wangeditor>
+                        <quill-editor
+                                v-model="operateForm.productExt.richContent"
+                                ref="myQuillEditor"
+                                :options="editorOption"
+                                @blur="onEditorBlur($event)" @focus="onEditorFocus($event)"
+                                @change="onEditorChange($event)">
+                        </quill-editor>
                     </template>
+
+
                 </el-form-item>
 
                 <!--<el-form-item label=" 上架时间
@@ -287,6 +302,7 @@
     //import NProgress from 'nprogress'
     import {getProductListPage, removeProduct, batchRemoveProduct, editProduct, addProduct} from '../../api/api';
 
+
     export default {
         data() {
             return {
@@ -298,6 +314,7 @@
                 tableHeader: [],
                 //标识sku是否为空
                 skuIsNull: true,
+                editorOption: {},
                 products: [],
                 productTypes: [],
 
@@ -369,10 +386,49 @@
                 this.onSaleOrOff(1);
             },
             //上下架操作
-            onSaleOrOff(flag) {
+            onSaleOrOff(flag, row) {
                 let inIf = true;
+                let idStr = '';
                 //flag为0表示上架，flag为1表示下架
-                let ids = this.sels.map(item => item.id).toString();
+                let ids = this.sels;
+                if (this.sels.length === 0) {
+                    console.debug("in lenght")
+                    // ids.push(row.id);
+                    // idStr = ids.map(item => item.id).toString();
+                    idStr = row.id.toString();
+                    inIf = true;
+                } else {
+                    for (let i = 0; i < ids.length; i++) {
+                        if (ids[i].state !== flag) {
+                            //其中某一商品状态异常,要操作商品已处于该状态
+                            if (flag === 1) {
+                                this.$message({
+                                    message: '某一商品已经下架',
+                                    type: 'error'
+                                });
+                                inIf = false;
+                            } else if (flag === 0) {
+                                this.$message({
+                                    message: '某一商品已经上架',
+                                    type: 'error'
+                                });
+                                inIf = false;
+                            }
+                            break;
+                        } else {
+                            //一切正常，可以进行后续操作
+                            if (i < ids.length - 1) {
+                                idStr += ids[i].id + ",";
+                            } else {
+                                idStr += ids[i].id;
+                            }
+                            inIf = true;
+                        }
+                    }
+                }
+
+                // this.sels = [];
+                // ids = this.sels.map(item => item.id).toString();
                 // {
                 //     // if(item.state !== flag) {
                 //     //     //其中某一商品状态异常,要操作商品已处于该状态
@@ -392,27 +448,29 @@
                 //     // }
                 //
                 // }
-                // if (inIf) {
+                if (inIf) {
                     this.$confirm('确认进行该操作吗？', '提示', {
                         type: 'warning'
                     }).then(() => {
                         this.listLoading = true;
-                        let para = {ids: ids,onSale:flag};
-                        this.$http.post("/services/product/product/onSaleOrOff",para).then((res) => {
+                        let para = {ids: idStr, onSale: flag};
+                        this.$http.post("/services/product/product/onSaleOrOff", para).then((res) => {
                             this.listLoading = false;
                             this.$message({
                                 message: '操作成功',
                                 type: 'success'
                             });
                             this.getProducts();
+                            this.sels = [];
                         });
                     }).catch(({data}) => {
                         this.$message({
                             message: '操作失败',
-                            type: 'error'+data.message
+                            type: 'error' + data.message
                         });
+                        this.sels = [];
                     });
-                // }
+                }
 
 
             },
@@ -525,8 +583,72 @@
                     });
                 });
             },
+            //新增或者编辑
+            operateSubmit: function () {
+                this.$refs.operateForm.validate((valid) => {
+                    if (valid) {
+                        this.$confirm('确认提交吗？', '提示', {}).then(() => {
+                            this.operateLoading = true;
+                            //NProgress.start();
+                            this.operateForm.productTypeId = this.operateForm.path.pop();
+                            let para = Object.assign({}, this.operateForm);
+                            para.onSaleTime = (!para.onSaleTime || para.onSaleTime == '') ? '' : util.formatDate.format(new Date(para.onSaleTime), 'yyyy-MM-dd hh:mm:ss');
+                            //后台根据id是否为null判断选择操作
+                            this.$http.post("/services/product/product/save", para).then((res) => {
+                                this.operateLoading = false;
+                                //NProgress.done();
+                                this.$message({
+                                    message: '提交成功',
+                                    type: 'success'
+                                });
+                                this.$refs['operateForm'].resetFields();
+                                this.operateFormVisible = false;
+                                this.getBrands();
+                                this.getProducts();
+                            });
+                        });
+                    }
+                });
+            },
+            //商品编辑
+            handleAddEdit: function (index, row) {
+                //index为编辑时传入的行号，从零开始，新增时我传入-1来区分操作
+                //编辑操作，回显数据
+                this.getProductTypes();
+                this.getBrands();
+                console.debug(row.productExt.richContent)
+                if (index !== -1) {
+                    //先清空预览列表
+                    this.fileList2 = [];
+                    //级联回显处理
+                    var path = row.productType.path;
+                    //照片回显
+                    this.photoFeed(row);
+                    var arr = [];
+                    arr = path.split(".").splice(1, 3);
+                    for (let i = 0; i < arr.length; i++) {
+                        arr[i] = parseInt(arr[i]);
+                    }
+                    this.operateForm = Object.assign({}, row);
+                    this.operateForm.path = arr;
+                } else {
+                    this.fileList2 = [];
+                    //新增操作;
+                    this.operateForm = {
+                        id: null,
+                        name: '',
+                        englishName: '',
+                        productTypeId: 0,
+                        path: [],
+                        logo: '',
+                        description: ''
+                    };
+
+                }
+                this.operateFormVisible = true;
+            },
             handleOnSaleOrOffSingle(index, row) {
-                this.onSaleOrOff(row.state);
+                this.onSaleOrOff(row.state, row);
                 // let flag = 0;
                 // if (row.state === 1) {
                 //     //下架操作
@@ -657,6 +779,25 @@
             //时间格式化
             getOffSaleTime(val) {
                 this.operateForm.offSaleTime = val;
+            },
+            //照片回显方法
+            photoFeed(row) {
+                try {
+                    let lo = JSON.parse(row.logo);
+                    for (let i = 0; i < lo.length; i++) {
+                        lo[i].url = "http://119.23.246.140" + lo[i].url;
+                        this.fileList2.push(lo[i])
+                    }
+                } catch (err) {
+                    return false;
+                }
+
+            },
+            onEditorBlur() {//失去焦点事件
+            },
+            onEditorFocus() {//获得焦点事件
+            },
+            onEditorChange() {//内容改变事件
             }
         },
         mounted() {
@@ -756,4 +897,9 @@
 
 <style scoped>
 
+    .quill-editor {
+
+        height: 400px;
+        padding-bottom: 50px;
+    }
 </style>
