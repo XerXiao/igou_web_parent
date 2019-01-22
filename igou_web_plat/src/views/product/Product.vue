@@ -23,6 +23,7 @@
                 <el-form-item>
                     <el-button type="primary" @click="configSkuProperties">配置Sku属性</el-button>
                 </el-form-item>
+
             </el-form>
         </el-col>
 
@@ -71,7 +72,7 @@
             </el-table-column>
             <el-table-column label="操作" width="230" fixed="right">
                 <template slot-scope="scope">
-                    <el-button type="primary" size="small" @click="handleUpdate(scope.$index, scope.row)">
+                    <el-button type="primary" size="small" @click="handleOnSaleOrOffSingle(scope.$index, scope.row)">
                         {{scope.row.state === 1 ? '下架':'上架'}}
                     </el-button>
                     <el-button size="small" @click="handleAddEdit(scope.$index, scope.row)">编辑</el-button>
@@ -83,6 +84,8 @@
         <!--工具条-->
         <el-col :span="24" class="toolbar">
             <el-button type="danger" @click="batchRemove" :disabled="this.sels.length===0">批量删除</el-button>
+            <el-button type="primary" @click="onSale" :disabled="this.sels.length===0">批量上架</el-button>
+            <el-button type="primary" @click="offSale" :disabled="this.sels.length===0">批量下架</el-button>
             <el-pagination layout="prev, pager, next" @current-change="handleCurrentChange"
                            :total="total" style="float:right;">
             </el-pagination>
@@ -244,10 +247,13 @@
                         :header-cell-style="{background:'#EEEEEE'}"
                 >
                     <template v-for="(col,i) in this.tableHeader">
-                        <el-table-column :prop="col.prop" :label="col.label" v-if="['price','availableStock','state'].includes(col.prop)">
+                        <el-table-column :prop="col.prop" :label="col.label"
+                                         v-if="['price','availableStock','state'].includes(col.prop)">
                             <template slot-scope="scope">
-                                <el-input auto-complete="off" v-model="dynamicTableDate[scope.$index].price" v-if="'price'===col.prop"></el-input>
-                                <el-input auto-complete="off" v-model="dynamicTableDate[scope.$index].availableStock" v-if="'availableStock'===col.prop"></el-input>
+                                <el-input auto-complete="off" v-model="dynamicTableDate[scope.$index].price"
+                                          v-if="'price'===col.prop"></el-input>
+                                <el-input auto-complete="off" v-model="dynamicTableDate[scope.$index].availableStock"
+                                          v-if="'availableStock'===col.prop"></el-input>
                                 <el-checkbox v-if="'state'===col.prop"></el-checkbox>
                             </template>
                         </el-table-column>
@@ -258,439 +264,496 @@
                                          v-if="!['price','availableStock','state'].includes(col.prop)"
                         >
                             <!--<template slot-scope="scope">-->
-                               <!--<el-input auto-complete="off" v-model="scope.row[col.prop]" ></el-input>-->
-                               <!--</template>-->
-                            </el-table-column>
-                        </template>
+                            <!--<el-input auto-complete="off" v-model="scope.row[col.prop]" ></el-input>-->
+                            <!--</template>-->
+                        </el-table-column>
+                    </template>
 
-                    </el-table>
+                </el-table>
 
-                </el-form>
+            </el-form>
 
-                <div slot="footer" class="dialog-footer">
-                    <el-button @click.native="skuPropertiesFormVisible = false">取消</el-button>
-                    <el-button type="primary" @click.native="skuPropertiesSubmit" :loading="addLoading">提交</el-button>
-                </div>
-            </el-dialog>
-        </section>
-    </template>
+            <div slot="footer" class="dialog-footer">
+                <el-button @click.native="skuPropertiesFormVisible = false">取消</el-button>
+                <el-button type="primary" @click.native="skuPropertiesSubmit" :loading="addLoading">提交</el-button>
+            </div>
+        </el-dialog>
+    </section>
+</template>
 
-    <script>
-        import util from '../../common/js/util'
-        import vueWangeditor from 'vue-wangeditor'
-        //import NProgress from 'nprogress'
-        import {getProductListPage, removeProduct, batchRemoveProduct, editProduct, addProduct} from '../../api/api';
+<script>
+    import util from '../../common/js/util'
+    import vueWangeditor from 'vue-wangeditor'
+    //import NProgress from 'nprogress'
+    import {getProductListPage, removeProduct, batchRemoveProduct, editProduct, addProduct} from '../../api/api';
 
-        export default {
-            data() {
-                return {
-                    filters: {
-                        keyword: ''
-                    },
-                    //动态表格数据
-                    dynamicTableDate: null,
-                    tableHeader: [],
-                    //标识sku是否为空
-                    skuIsNull:true,
-                    products: [],
-                    productTypes: [],
+    export default {
+        data() {
+            return {
+                filters: {
+                    keyword: ''
+                },
+                //动态表格数据
+                dynamicTableDate: null,
+                tableHeader: [],
+                //标识sku是否为空
+                skuIsNull: true,
+                products: [],
+                productTypes: [],
 
-                    tableData:[],
-                    properties: [],
-                    skuProperties: [],
-                    productsProps: {
-                        value: 'id',
-                        label: 'name',
-                        children: 'children'
-                    },
-                    brands: [],
-                    brandProps: {
-                        value: 'id',
-                        label: 'name'
-                    },
-                    total: 0,
-                    page: 1,
-                    listLoading: false,
-                    sels: [],//列表选中列
-                    currentRow: null,
-                    editFormVisible: false,//编辑界面是否显示
-                    editLoading: false,
-                    editFormRules: {
-                        name: [
-                            {required: true, message: '请输入姓名', trigger: 'blur'}
-                        ]
-                    },
-                    operateFormVisible: false,//新增界面是否显示
-                    propertiesFormVisible: false,
-                    skuPropertiesFormVisible: false,
-                    addLoading: false,
-                    operateFormRules: {
-                        name: [
-                            {required: true, message: '请输入姓名', trigger: 'blur'}
-                        ]
-                    },
-                    //操作界面数据
-                    operateForm: {
-                        id: '',
-                        name: '',
-                        subName: '',
-                        code: '',
-                        path: [],
-                        productTypeId: '',
-                        brandId: '',
-                        onSaleTime: '',
-                        offSaleTime: '',
-                        productExt: {
-                            richContent: '',
-                            description: ''
-                        }
-                    },
-                    propertiesForm: {
-                        name: '',
-                        isSku: 0,
-                        typeId: ''
+                tableData: [],
+                properties: [],
+                skuProperties: [],
+                productsProps: {
+                    value: 'id',
+                    label: 'name',
+                    children: 'children'
+                },
+                brands: [],
+                brandProps: {
+                    value: 'id',
+                    label: 'name'
+                },
+                total: 0,
+                page: 1,
+                listLoading: false,
+                sels: [],//列表选中列
+                currentRow: null,
+                editFormVisible: false,//编辑界面是否显示
+                editLoading: false,
+                editFormRules: {
+                    name: [
+                        {required: true, message: '请输入姓名', trigger: 'blur'}
+                    ]
+                },
+                operateFormVisible: false,//新增界面是否显示
+                propertiesFormVisible: false,
+                skuPropertiesFormVisible: false,
+                addLoading: false,
+                operateFormRules: {
+                    name: [
+                        {required: true, message: '请输入姓名', trigger: 'blur'}
+                    ]
+                },
+                //操作界面数据
+                operateForm: {
+                    id: '',
+                    name: '',
+                    subName: '',
+                    code: '',
+                    path: [],
+                    productTypeId: '',
+                    brandId: '',
+                    onSaleTime: '',
+                    offSaleTime: '',
+                    productExt: {
+                        richContent: '',
+                        description: ''
                     }
-
+                },
+                propertiesForm: {
+                    name: '',
+                    isSku: 0,
+                    typeId: ''
                 }
+
+            }
+        },
+        methods: {
+            //上架.
+            onSale() {
+                this.onSaleOrOff(0);
             },
-            methods: {
-                //单击删除添加的输入框
-                handleRemoveSkuValue(skuValues, index) {
-                    skuValues.splice(index - 1, 1);
-                },
-                //sku属性输入时
-                handleSkuInputChange() {
-                    this.skuProperties.skuValues.push({});
-                },
-                handleRowClick(row, event, column) {
-                    this.propertiesForm.typeId = row.productTypeId;
-                    this.currentRow = row;
-                },
-                handleRowSelect(selection, row) {
-                    this.propertiesForm.typeId = row.productTypeId;
-                    this.currentRow = row;
-                },
-                configViewProperties() {
-                    if (this.currentRow === null) {
-                        //没有选择行
-                        this.$message({
-                            message: '请选择行再进行操作',
-                            type: 'warning'
-                        });
-                    } else {
-                        //获取选中行id传递
-                        let productId = this.currentRow.id;
-                        this.$http.get("/services/product/specification/product/" + productId)
-                            .then(({data}) => {
-                                this.propertiesFormVisible = true;
-                                this.properties = data;
-                            })
-                    }
-                },
-                configSkuProperties() {
-                    if (this.currentRow === null) {
-                        //没有选择行
-                        this.$message({
-                            message: '请选择行再进行操作',
-                            type: 'warning'
-                        });
-                    } else {
-                        //获取选中行id传递
-                        let productId = this.currentRow.id;
-                        //请求获得sku属性相关信息
-                        this.$http.get("/services/product/specification/productSku/" + productId)
-                            .then(({data}) => {
-                                this.skuPropertiesFormVisible = true;
-                                this.skuProperties = data;
-                                this.tableHeader = [];
-                            });
-                        this.$http.get("/services/product/sku/list/" + productId)
-                            .then(({data}) => {
-                                this.skuPropertiesFormVisible = true;
-                                if(data.length > 0) {
-                                    console.debug("大于0 不为空 走元数据")
-                                    this.dynamicTableDate = []
-                                    this.dynamicTableDate = data;
-                                }
-                                this.tableHeader = [];
-                                this.skuIsNull = false;
-                            });
-
-                    }
-                },
-                handleCurrentChange(val) {
-                    this.page = val;
-                    this.getProducts();
-                },
-                //获取数据列表
-                getProducts() {
-                    let para = {
-                        page: this.page,
-                        keyword: this.filters.keyword
-                    };
-                    this.listLoading = true;
-                    //NProgress.start();
-                    this.$http.post("/services/product/product/json", para)
-                        .then(({data}) => {
-                            this.total = data.total;
-                            this.products = data.rows;
-
-                            this.listLoading = false;
-                            //NProgress.done();
-                        });
-                },
-                //删除
-                handleDel: function (index, row) {
-                    this.$confirm('确认删除该记录吗?', '提示', {
+            //下架
+            offSale() {
+                this.onSaleOrOff(1);
+            },
+            //上下架操作
+            onSaleOrOff(flag) {
+                let inIf = true;
+                //flag为0表示上架，flag为1表示下架
+                let ids = this.sels.map(item => item.id).toString();
+                // {
+                //     // if(item.state !== flag) {
+                //     //     //其中某一商品状态异常,要操作商品已处于该状态
+                //     //     if(flag === 1) {
+                //     //         this.$message({
+                //     //             message: '某一商品已经下架',
+                //     //             type: 'error'
+                //     //         });
+                //     //         inIf = false;
+                //     //     }else if(flag === 0) {
+                //     //         this.$message({
+                //     //             message: '某一商品已经上架',
+                //     //             type: 'error'
+                //     //         });
+                //     //         inIf = false;
+                //     //     }
+                //     // }
+                //
+                // }
+                // if (inIf) {
+                    this.$confirm('确认进行该操作吗？', '提示', {
                         type: 'warning'
                     }).then(() => {
                         this.listLoading = true;
-                        //NProgress.start();
-                        let id = row.id;
-                        removeProduct(id).then((res) => {
+                        let para = {ids: ids,onSale:flag};
+                        this.$http.post("/services/product/product/onSaleOrOff",para).then((res) => {
                             this.listLoading = false;
-                            //NProgress.done();
-                            this.$message({
-                                message: '删除成功',
-                                type: 'success'
-                            });
-                            this.getProducts();
-                        });
-                    }).catch(() => {
-                        this.$message({
-                            message: '删除异常',
-                            type: 'error'
-                        });
-                    });
-                },
-                handleUpdate(index, row) {
-                    let flag = 0;
-                    if (row.state === 1) {
-                        //下架操作
-                        flag = 0;
-                    } else {
-                        //上架操作
-                        flag = 1;
-                    }
-                    let para = {
-                        id: row.id,
-                        state: flag
-                    };
-                    this.$confirm('确认提交吗？', '提示', {}).then(() => {
-                        this.$http.post("/services/product/product/save", para).then((res) => {
-                            this.addLoading = false;
-                            //NProgress.done();
                             this.$message({
                                 message: '操作成功',
                                 type: 'success'
                             });
                             this.getProducts();
-                        }).catch(() => {
-                            this.$message({
-                                message: '操作失败',
-                                type: 'error'
-                            });
-                            this.getProducts();
-                        })
+                        });
+                    }).catch(({data}) => {
+                        this.$message({
+                            message: '操作失败',
+                            type: 'error'+data.message
+                        });
                     });
-                },
-                //显示属性提交
-                viewPropertiesSubmit() {
-                    //获取当前商品id
-                    let id = this.currentRow.id;
-                    let map = {
-                        productId: id,
-                        properties: this.properties
-                    };
-                    this.$http.post("/services/product/product/saveViewProperties", map)
-                        .then(({data}) => {
-                            this.addLoading = false;
-                            this.$message({
-                                message: '提交成功',
-                                type: 'success'
-                            });
-                            this.$refs['propertiesForm'].resetFields();
-                            this.propertiesFormVisible = false;
-                            this.getProducts();
-                        })
-                },
-                //sku属性提交
-                skuPropertiesSubmit(){
-                    //获取当前商品id
-                    let id = this.currentRow.id;
-                    let skus = {
-                        productId: id,
-                        skuProperties : this.skuProperties,
-                        skuPro : []
-                    };
-                    let arr = [];
-                    this.dynamicTableDate.forEach(function (val,index) {
-                       //替换中文
-                        let price = JSON.parse(JSON.stringify(val).replace(/价格/g,'price')
-                                    .replace(/库存/g,'availableStock').replace(/是否可用/g,'state'));
-                        let sku = Object.assign({},price);
-                        skus.skuPro.push(sku);
-                    });
+                // }
 
-                    this.$http.post("/services/product/product/saveSkuProperties", skus)
-                        .then(({data}) => {
-                            this.addLoading = false;
-                            this.$message({
-                                message: '提交成功',
-                                type: 'success'
-                            });
-                            this.$refs['propertiesForm'].resetFields();
-                            this.skuPropertiesFormVisible = false;
-                            this.getProducts();
-                        })
-                },
-                selsChange: function (sels) {
-                    this.sels = sels;
-                },
-                //批量删除
-                batchRemove: function () {
-                    var ids = this.sels.map(item => item.id).toString();
-                    this.$confirm('确认删除选中记录吗？', '提示', {
+
+            },
+            //单击删除添加的输入框
+            handleRemoveSkuValue(skuValues, index) {
+                skuValues.splice(index - 1, 1);
+            },
+            //sku属性输入时
+            handleSkuInputChange() {
+                this.skuProperties.skuValues.push({});
+            },
+            handleRowClick(row, event, column) {
+                this.propertiesForm.typeId = row.productTypeId;
+                this.currentRow = row;
+            },
+            handleRowSelect(selection, row) {
+                this.propertiesForm.typeId = row.productTypeId;
+                this.currentRow = row;
+            },
+            configViewProperties() {
+                if (this.currentRow === null) {
+                    //没有选择行
+                    this.$message({
+                        message: '请选择行再进行操作',
                         type: 'warning'
-                    }).then(() => {
-                        this.listLoading = true;
-                        //NProgress.start();
-                        let para = {ids: ids};
-                        batchRemoveProduct(para).then((res) => {
-                            this.listLoading = false;
-                            //NProgress.done();
-                            this.$message({
-                                message: '删除成功',
-                                type: 'success'
-                            });
-                            this.getProducts();
-                        });
-                    }).catch(() => {
-
                     });
-                },
-                //获取所有品牌
-                getProductTypes: function () {
-                    this.$http.get("/services/product/productType/treeData")
+                } else {
+                    //获取选中行id传递
+                    let productId = this.currentRow.id;
+                    this.$http.get("/services/product/specification/product/" + productId)
                         .then(({data}) => {
-                            if (data != null) {
-                                this.productTypes = data;
-                            }
+                            this.propertiesFormVisible = true;
+                            this.properties = data;
                         })
-                },
-                //获取所有品牌
-                getBrands: function () {
-                    this.$http.get("/services/product/brand/treeData")
-                        .then(({data}) => {
-                            if (data != null) {
-                                this.brands = data;
-                            }
-                        })
-                },
-                //时间格式化
-                getOnSaleTime(val) {
-                    this.operateForm.onSaleTime = val;
-                },
-                //时间格式化
-                getOffSaleTime(val) {
-                    this.operateForm.offSaleTime = val;
                 }
             },
-            mounted() {
-                this.getProducts();
-                this.getProductTypes();
-                this.getBrands();
-            },
-            components: {
-                vueWangeditor
-            },
-            watch: {
-                skuProperties: {
-                    handler(currentVal, oldVal) {
-                        if(!this.skuIsNull) {
-                            console.debug("in null")
-                            this.skuIsNull = true;
-                        }else {
-                            console.debug("in fill")
-                            // 循环每一个商品属性
-                            //过滤没有值的选项
-                            currentVal = currentVal.filter(item => item.skuValues.length > 0);
-                            const data = Object.keys(currentVal).reduce((result, key) => {
-                                // 循环属性的每一个值
-                                return currentVal[key].skuValues.reduce((acc, value) => {
-                                    let name = currentVal[key].name;
-                                    let id = currentVal[key].id;
-                                    // 对于第一个属性
-                                    if (!result.length) {
-                                        // 将数值转化为对象格式
-                                        return acc.concat({[id+":"+name]: value});
-                                    }
-                                    // 对于第一个之后的属性，将新的属性和值添加到已有结果，并进行拼接。
-                                    return acc.concat(result.map(ele => (Object.assign({}, ele, {[id+":"+name]: value}))));
-                                }, []);
-                            }, []);
-
-
-                            // console.log("jjjj",this.skuProperties);
-                            // // 过滤掉用户没有填写数据的规格参数
-                            // const arr = this.skuProperties.filter(s => s.skuValues.length > 0);
-                            // // 通过reduce进行累加笛卡尔积
-                            // var skus =  arr.reduce((last, spec) => {
-                            //     const result = [];
-                            //     last.forEach(o => {
-                            //         spec.skuValues.forEach(option => {
-                            //             // option //一个一一个值 黄皮肤
-                            //             const obj = {};
-                            //             Object.assign(obj, o);
-                            //             obj[spec.name] = option;
-                            //             result.push(obj);
-                            //         })
-                            //     })
-                            //     return result
-                            // }, [{}]);
-                            //假数据测试是否能够绑定数据
-                            data.forEach(function (item) {
-                                item['price'] = '';
-                                item['availableStock'] = '';
-                                item['state'] = 0;
-                            });
-                            // this.dynamicTableDate = skus;
-                            this.dynamicTableDate = data;
-                        }
-                        // {"是否可用":0,"价格":0,"库存":0}
-
-                        // let header = Object.keys(this.dynamicTableDate[0]);
-                        // this.dynamicTableDate = [];
-                        // this.dynamicTableDate = this.tableData;
-                        // header.push({"label":"价格","prop":"price"},{"label":"库存","prop":"availableStock"},{"label":"是否可用","prop":"state"})
-                        // console.debug(header)
-                        // this.tableHeader = header;
-
-                        let header = []
-                        Object.keys(this.dynamicTableDate[0]).forEach(sku=>{
-                            let value = sku;
-                            if(sku==='price'){
-                                value = '价格'
-                            }
-                            if(sku==='availableStock'){
-                                value = '库存'
-                            }
-                            if(sku==='state'){
-                                value = '是否可用'
-                            }
-                            let col =  {"label":value,"prop":sku};
-                            header.push(col);
+            configSkuProperties() {
+                if (this.currentRow === null) {
+                    //没有选择行
+                    this.$message({
+                        message: '请选择行再进行操作',
+                        type: 'warning'
+                    });
+                } else {
+                    //获取选中行id传递
+                    let productId = this.currentRow.id;
+                    //请求获得sku属性相关信息
+                    this.$http.get("/services/product/specification/productSku/" + productId)
+                        .then(({data}) => {
+                            this.skuPropertiesFormVisible = true;
+                            this.skuProperties = data;
+                            this.tableHeader = [];
                         });
-                        this.tableHeader = header;
-                    },
-                    //是否监视该对象深层变化
-                    deep: true
+                    this.$http.get("/services/product/sku/list/" + productId)
+                        .then(({data}) => {
+                            this.skuPropertiesFormVisible = true;
+                            if (data.length > 0) {
+                                console.debug("大于0 不为空 走元数据")
+                                this.dynamicTableDate = []
+                                this.dynamicTableDate = data;
+                            }
+                            this.tableHeader = [];
+                            this.skuIsNull = false;
+                        });
+
                 }
+            },
+            handleCurrentChange(val) {
+                this.page = val;
+                this.getProducts();
+            },
+            //获取数据列表
+            getProducts() {
+                let para = {
+                    page: this.page,
+                    keyword: this.filters.keyword
+                };
+                this.listLoading = true;
+                //NProgress.start();
+                this.$http.post("/services/product/product/json", para)
+                    .then(({data}) => {
+                        this.total = data.total;
+                        this.products = data.rows;
+
+                        this.listLoading = false;
+                        //NProgress.done();
+                    });
+            },
+            //删除
+            handleDel: function (index, row) {
+                this.$confirm('确认删除该记录吗?', '提示', {
+                    type: 'warning'
+                }).then(() => {
+                    this.listLoading = true;
+                    //NProgress.start();
+                    let id = row.id;
+                    removeProduct(id).then((res) => {
+                        this.listLoading = false;
+                        //NProgress.done();
+                        this.$message({
+                            message: '删除成功',
+                            type: 'success'
+                        });
+                        this.getProducts();
+                    });
+                }).catch(() => {
+                    this.$message({
+                        message: '删除异常',
+                        type: 'error'
+                    });
+                });
+            },
+            handleOnSaleOrOffSingle(index, row) {
+                this.onSaleOrOff(row.state);
+                // let flag = 0;
+                // if (row.state === 1) {
+                //     //下架操作
+                //
+                // } else {
+                //     //上架操作
+                //     flag = 1;
+                // }
+                // let para = {
+                //     id: row.id,
+                //     state: flag
+                // };
+                // this.$confirm('确认提交吗？', '提示', {}).then(() => {
+                //     this.$http.post("/services/product/product/save", para).then((res) => {
+                //         this.addLoading = false;
+                //         //NProgress.done();
+                //         this.$message({
+                //             message: '操作成功',
+                //             type: 'success'
+                //         });
+                //         this.getProducts();
+                //     }).catch(() => {
+                //         this.$message({
+                //             message: '操作失败',
+                //             type: 'error'
+                //         });
+                //         this.getProducts();
+                //     })
+                // });
+            },
+            //显示属性提交
+            viewPropertiesSubmit() {
+                //获取当前商品id
+                let id = this.currentRow.id;
+                let map = {
+                    productId: id,
+                    properties: this.properties
+                };
+                this.$http.post("/services/product/product/saveViewProperties", map)
+                    .then(({data}) => {
+                        this.addLoading = false;
+                        this.$message({
+                            message: '提交成功',
+                            type: 'success'
+                        });
+                        this.$refs['propertiesForm'].resetFields();
+                        this.propertiesFormVisible = false;
+                        this.getProducts();
+                    })
+            },
+            //sku属性提交
+            skuPropertiesSubmit() {
+                //获取当前商品id
+                let id = this.currentRow.id;
+                let skus = {
+                    productId: id,
+                    skuProperties: this.skuProperties,
+                    skuPro: []
+                };
+                let arr = [];
+                this.dynamicTableDate.forEach(function (val, index) {
+                    //替换中文
+                    let price = JSON.parse(JSON.stringify(val).replace(/价格/g, 'price')
+                        .replace(/库存/g, 'availableStock').replace(/是否可用/g, 'state'));
+                    let sku = Object.assign({}, price);
+                    skus.skuPro.push(sku);
+                });
+
+                this.$http.post("/services/product/product/saveSkuProperties", skus)
+                    .then(({data}) => {
+                        this.addLoading = false;
+                        this.$message({
+                            message: '提交成功',
+                            type: 'success'
+                        });
+                        this.$refs['propertiesForm'].resetFields();
+                        this.skuPropertiesFormVisible = false;
+                        this.getProducts();
+                    })
+            },
+            selsChange: function (sels) {
+                this.sels = sels;
+            },
+            //批量删除
+            batchRemove: function () {
+                var ids = this.sels.map(item => item.id).toString();
+                this.$confirm('确认删除选中记录吗？', '提示', {
+                    type: 'warning'
+                }).then(() => {
+                    this.listLoading = true;
+                    //NProgress.start();
+                    let para = {ids: ids};
+                    batchRemoveProduct(para).then((res) => {
+                        this.listLoading = false;
+                        //NProgress.done();
+                        this.$message({
+                            message: '删除成功',
+                            type: 'success'
+                        });
+                        this.getProducts();
+                    });
+                }).catch(() => {
+
+                });
+            },
+            //获取所有品牌
+            getProductTypes: function () {
+                this.$http.get("/services/product/productType/treeData")
+                    .then(({data}) => {
+                        if (data != null) {
+                            this.productTypes = data;
+                        }
+                    })
+            },
+            //获取所有品牌
+            getBrands: function () {
+                this.$http.get("/services/product/brand/treeData")
+                    .then(({data}) => {
+                        if (data != null) {
+                            this.brands = data;
+                        }
+                    })
+            },
+            //时间格式化
+            getOnSaleTime(val) {
+                this.operateForm.onSaleTime = val;
+            },
+            //时间格式化
+            getOffSaleTime(val) {
+                this.operateForm.offSaleTime = val;
+            }
+        },
+        mounted() {
+            this.getProducts();
+            this.getProductTypes();
+            this.getBrands();
+        },
+        components: {
+            vueWangeditor
+        },
+        watch: {
+            skuProperties: {
+                handler(currentVal, oldVal) {
+                    if (!this.skuIsNull) {
+                        console.debug("in null")
+                        this.skuIsNull = true;
+                    } else {
+                        console.debug("in fill")
+                        // 循环每一个商品属性
+                        //过滤没有值的选项
+                        currentVal = currentVal.filter(item => item.skuValues.length > 0);
+                        const data = Object.keys(currentVal).reduce((result, key) => {
+                            // 循环属性的每一个值
+                            return currentVal[key].skuValues.reduce((acc, value) => {
+                                let name = currentVal[key].name;
+                                let id = currentVal[key].id;
+                                // 对于第一个属性
+                                if (!result.length) {
+                                    // 将数值转化为对象格式
+                                    return acc.concat({[id + ":" + name]: value});
+                                }
+                                // 对于第一个之后的属性，将新的属性和值添加到已有结果，并进行拼接。
+                                return acc.concat(result.map(ele => (Object.assign({}, ele, {[id + ":" + name]: value}))));
+                            }, []);
+                        }, []);
+
+
+                        // console.log("jjjj",this.skuProperties);
+                        // // 过滤掉用户没有填写数据的规格参数
+                        // const arr = this.skuProperties.filter(s => s.skuValues.length > 0);
+                        // // 通过reduce进行累加笛卡尔积
+                        // var skus =  arr.reduce((last, spec) => {
+                        //     const result = [];
+                        //     last.forEach(o => {
+                        //         spec.skuValues.forEach(option => {
+                        //             // option //一个一一个值 黄皮肤
+                        //             const obj = {};
+                        //             Object.assign(obj, o);
+                        //             obj[spec.name] = option;
+                        //             result.push(obj);
+                        //         })
+                        //     })
+                        //     return result
+                        // }, [{}]);
+                        //假数据测试是否能够绑定数据
+                        data.forEach(function (item) {
+                            item['price'] = '';
+                            item['availableStock'] = '';
+                            item['state'] = 0;
+                        });
+                        // this.dynamicTableDate = skus;
+                        this.dynamicTableDate = data;
+                    }
+                    // {"是否可用":0,"价格":0,"库存":0}
+
+                    // let header = Object.keys(this.dynamicTableDate[0]);
+                    // this.dynamicTableDate = [];
+                    // this.dynamicTableDate = this.tableData;
+                    // header.push({"label":"价格","prop":"price"},{"label":"库存","prop":"availableStock"},{"label":"是否可用","prop":"state"})
+                    // console.debug(header)
+                    // this.tableHeader = header;
+
+                    let header = []
+                    Object.keys(this.dynamicTableDate[0]).forEach(sku => {
+                        let value = sku;
+                        if (sku === 'price') {
+                            value = '价格'
+                        }
+                        if (sku === 'availableStock') {
+                            value = '库存'
+                        }
+                        if (sku === 'state') {
+                            value = '是否可用'
+                        }
+                        let col = {"label": value, "prop": sku};
+                        header.push(col);
+                    });
+                    this.tableHeader = header;
+                },
+                //是否监视该对象深层变化
+                deep: true
             }
         }
+    }
 
-    </script>
+</script>
 
-    <style scoped>
+<style scoped>
 
-    </style>
+</style>

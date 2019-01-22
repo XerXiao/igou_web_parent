@@ -51,6 +51,10 @@
                                     暂无显示属性
                                 </el-card>
                             </el-row>
+
+                            <el-badge :value="12" class="item" style="">
+                                <el-button size="small"><i class="el-icon-delete"></i></el-button>
+                            </el-badge>
                         </el-card>
                     </el-row>
 
@@ -176,8 +180,8 @@
                             arr.push(this.viewProperties.pop());
                         }
                         //NProgress.start();
-                        let para = Object.assign({}, arr);
-                        this.$http.post("/services/product/specification/save", para)
+                        let para = Object.assign(arr);
+                        this.$http.post("/services/product/specification/save",para)
                             .then(({data}) => {
                                 this.listLoading = false;
                                 //NProgress.done();
@@ -185,7 +189,7 @@
                                     message: '保存成功',
                                     type: 'success'
                                 });
-                                this.getPropertys();
+                                this.viewProperties.push(para);
                             });
                     }else {
                         //删除属性
