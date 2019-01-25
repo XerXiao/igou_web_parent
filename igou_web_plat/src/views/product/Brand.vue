@@ -33,6 +33,11 @@
             <el-table-column prop="createTime" label="创建时间" min-width="180" sortable>
             </el-table-column>
             <el-table-column prop="logo" label="logo" min-width="180" sortable>
+                <template slot-scope="scope">
+                    <img    style="width: 60px"
+                            :src="scope.row.logo !== null ?
+                        'http://119.23.246.140'+JSON.parse(scope.row.logo.substring(1,scope.row.logo.length-1)).url : 'none'">
+                </template>
             </el-table-column>
             <el-table-column label="操作" width="150">
                 <template slot-scope="scope">
@@ -110,6 +115,7 @@
     export default {
         data() {
             return {
+                tip :false,
                 filters: {
                     keyword: ''
                 },

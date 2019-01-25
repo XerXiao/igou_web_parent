@@ -49,10 +49,14 @@
             <el-table-column prop="code" label="编码" width="120" sortable show-overflow-tooltip>
             </el-table-column>
             <el-table-column prop="maxPrice" label="最高价" width="100" sortable>
+                <template slot-scope="scope">
+                    {{ scope.row.maxPrice *0.01 }}
+                </template>
             </el-table-column>
             <el-table-column prop="minPrice" label="最低价" min-width="100" sortable>
-            </el-table-column>
-            <el-table-column prop="minPrice" label="最低价" min-width="100" sortable>
+                <template slot-scope="scope">
+                    {{ scope.row.minPrice *0.01 }}
+                </template>
             </el-table-column>
             <el-table-column prop="state" label="状态" min-width="100" sortable>
                 <template slot-scope="scope">
@@ -62,13 +66,7 @@
                     </el-tag>
                 </template>
             </el-table-column>
-            <el-table-column prop="viewCount" label="浏览量" min-width="100" sortable>
-            </el-table-column>
             <el-table-column prop="createTime" label="创建时间" min-width="120" sortable show-overflow-tooltip>
-            </el-table-column>
-            <el-table-column prop="commentCount" label="评论数" min-width="100" sortable>
-            </el-table-column>
-            <el-table-column prop="commentScore" label="评分" min-width="100" sortable>
             </el-table-column>
             <el-table-column label="操作" width="230" fixed="right">
                 <template slot-scope="scope">
@@ -106,10 +104,6 @@
                 </el-form-item>
                 <el-form-item label="副名称">
                     <el-input v-model="operateForm.subName" auto-complete="off"></el-input>
-                    <!--<el-radio-group v-model="operateForm.subName">-->
-                    <!--<el-radio class="radio" :label="1">男</el-radio>-->
-                    <!--<el-radio class="radio" :label="0">女</el-radio>-->
-                    <!--</el-radio-group>-->
                 </el-form-item>
                 <el-form-item label="商品编码">
                     <el-input v-model="operateForm.code" auto-complete="off"></el-input>
@@ -262,6 +256,7 @@
                         :header-cell-style="{background:'#EEEEEE'}"
                 >
                     <template v-for="(col,i) in this.tableHeader">
+
                         <el-table-column :prop="col.prop" :label="col.label"
                                          v-if="['price','availableStock','state'].includes(col.prop)">
                             <template slot-scope="scope">
@@ -528,7 +523,6 @@
                         .then(({data}) => {
                             this.skuPropertiesFormVisible = true;
                             if (data.length > 0) {
-                                console.debug("大于0 不为空 走元数据")
                                 this.dynamicTableDate = []
                                 this.dynamicTableDate = data;
                             }
@@ -576,12 +570,7 @@
                         });
                         this.getProducts();
                     });
-                }).catch(() => {
-                    this.$message({
-                        message: '删除异常',
-                        type: 'error'
-                    });
-                });
+                })
             },
             //新增或者编辑
             operateSubmit: function () {
@@ -616,7 +605,6 @@
                 //编辑操作，回显数据
                 this.getProductTypes();
                 this.getBrands();
-                console.debug(row.productExt.richContent)
                 if (index !== -1) {
                     //先清空预览列表
                     this.fileList2 = [];
@@ -641,7 +629,10 @@
                         productTypeId: 0,
                         path: [],
                         logo: '',
-                        description: ''
+                        productExt: {
+                            richContent: '',
+                            description: ''
+                        }
                     };
 
                 }
@@ -812,10 +803,8 @@
             skuProperties: {
                 handler(currentVal, oldVal) {
                     if (!this.skuIsNull) {
-                        console.debug("in null")
                         this.skuIsNull = true;
                     } else {
-                        console.debug("in fill")
                         // 循环每一个商品属性
                         //过滤没有值的选项
                         currentVal = currentVal.filter(item => item.skuValues.length > 0);

@@ -8,20 +8,20 @@
 
 		<meta http-equiv="X-UA-Compatible" content="IE=edge,Chrome=1">
 		<!-- 网站头像 -->
-		<link type="text/css" rel="stylesheet" href="css/iconfont.css">
-		<link type="text/css" rel="stylesheet" href="css/common.css">
+		<link type="text/css" rel="stylesheet" href="/static/css/iconfont.css">
+		<link type="text/css" rel="stylesheet" href="/static/css/common.css">
 		<!--整站改色 _start-->
-		<link type="text/css" rel="stylesheet" href="css/color-style.css">
+		<link type="text/css" rel="stylesheet" href="/static/css/color-style.css">
 		<!--整站改色 _end-->
-		<link rel="stylesheet" href="css/layer.css" id="layuicss-skinlayercss">
-		<script type="text/javascript" src="js/jquery.js"></script>
-		<script type="text/javascript" src="js/jquery.cookie.js"></script>
-		<script type="text/javascript" src="js/layer.js"></script>
-		<script type="text/javascript" src="js/jquery.method.js"></script>
-		<script type="text/javascript" src="js/jquery.modal.js"></script>
-		<script type="text/javascript" src="js/common.js"></script>
+		<link rel="stylesheet" href="/static/css/layer.css" id="layuicss-skinlayercss">
+		<script type="text/javascript" src="/static/js/jquery.js"></script>
+		<script type="text/javascript" src="/static/js/jquery.cookie.js"></script>
+		<script type="text/javascript" src="/static/js/layer.js"></script>
+		<script type="text/javascript" src="/static/js/jquery.method.js"></script>
+		<script type="text/javascript" src="/static/js/jquery.modal.js"></script>
+		<script type="text/javascript" src="/static/js/common.js"></script>
 		<!-- 图片缓载js -->
-		<script type="text/javascript" src="js/jquery.lazyload.js"></script>
+		<script type="text/javascript" src="/static/js/jquery.lazyload.js"></script>
 		<script type="text/javascript">
 			$(document).ready(function() {
 				// 搜索框提示显示
@@ -429,11 +429,11 @@
 
 		<!-- 开始：主要区域内容 -->
 		<!-- css -->
-		<link type="text/css" rel="stylesheet" href="css/goods.css">
+		<link type="text/css" rel="stylesheet" href="/static/css/goods.css">
 		<!-- 地区选择器 -->
-		<script type="text/javascript" src="js/jquery.region.js"></script>
-		<script type="text/javascript" src="js/jquery.widget.js"></script>
-		<script type="text/javascript" src="js/jquery.history.js"></script>
+		<script type="text/javascript" src="/static/js/jquery.region.js"></script>
+		<script type="text/javascript" src="/static/js/jquery.widget.js"></script>
+		<script type="text/javascript" src="/static/js/jquery.history.js"></script>
 		<div class="w1210">
 
 			<div class="breadcrumb clearfix">
@@ -735,7 +735,7 @@
 
 						<div class="bdsharebuttonbox fr bdshare-button-style0-16" data-bd-bind="XXXXXXXXX">
 							<a class="bds_more" href="http://www.itsource.cn/6043.html#" data-cmd="more" style="background: none; color: #999; line-height: 25px; height: 25px; margin: 0px 10px; padding-left: 20px; display: block;">
-								<i style="width: 13px; height: 13px; background: transparent url(css/goods-icon.png) no-repeat -113px -65px; vertical-align: middle; display: inline-block;"></i> 分享
+								<i style="width: 13px; height: 13px; background: transparent url(/static/css/goods-icon.png) no-repeat -113px -65px; vertical-align: middle; display: inline-block;"></i> 分享
 							</a>
 						</div>
 					</div>
@@ -754,7 +754,7 @@
 							"share": {}
 						};
 						with(document) {
-							0[(getElementsByTagName('head')[0] || body).appendChild(createElement('script')).src = '//bdimg.share.baidu.com/static/api/js/share.js?v=89860593.js?cdnversion=' + ~(-new Date() / 36e5)];
+							0[(getElementsByTagName('head')[0] || body).appendChild(createElement('script')).src = '//bdimg.share.baidu.com/static/api//static/js/share.js?v=89860593.js?cdnversion=' + ~(-new Date() / 36e5)];
 						}
 					</script>
 				</div>
@@ -2355,21 +2355,21 @@
 			</p>
 		</div>
 		<!-- 头部右侧鼠标经过图片放大效果 _start -->
-		<script type="text/javascript" src="js/bubbleup.js"></script>
+		<script type="text/javascript" src="/static/js/bubbleup.js"></script>
 		<!-- 头部右侧鼠标经过图片放大效果 _end -->
 		<!-- 套餐、店内排行等左右切换效果 _start-->
-		<script type="text/javascript" src="js/tabs.js"></script>
+		<script type="text/javascript" src="/static/js/tabs.js"></script>
 		<!-- 套餐、店内排行等左右切换效果 _end -->
 		<!-- 右侧商品信息等定位切换效果 _start -->
-		<script type="text/javascript" src="js/tabs_totop.js"></script>
+		<script type="text/javascript" src="/static/js/tabs_totop.js"></script>
 		<!-- 右侧商品信息等定位切换效果 _end -->
 		<!-- 放大镜 _start -->
-		<script type="text/javascript" src="js/magiczoom.js"></script>
+		<script type="text/javascript" src="/static/js/magiczoom.js"></script>
 		<!-- 放大镜 _end -->
 		<!-- 控制图片经过放大 -->
-		<script type="text/javascript" src="js/goods.js"></script>
+		<script type="text/javascript" src="/static/js/goods.js"></script>
 		<!-- 地址选择 _start -->
-		<script type="text/javascript" src="js/select_region.js"></script>
+		<script type="text/javascript" src="/static/js/select_region.js"></script>
 		<!-- 地址选择 _end -->
 		<script id="SZY_GIFT_TEMPLATE" type="text">
 			<div class="prom-gift-list">
@@ -2412,7 +2412,7 @@
 
 				var sku_id = getSkuId();
 
-				return $.get("js/data/goods-change-location.json", {
+				return $.get("/static/js/data/goods-change-location.json", {
 					"sku_id": sku_id,
 					"region_code": region_code
 				}, function(result) {
@@ -2777,7 +2777,7 @@
 						// 计算高度
 						if($(document).scrollTop() >= $(desc_container).offset().top - $(window).height()) {
 							$("body").data("loading-goods-desc", true);
-							$.get("js/data/goods-desc.json", {
+							$.get("/static/js/data/goods-desc.json", {
 								sku_id: "6163"
 							}, function(result) {
 								$(desc_container).html(result.pc_desc);
@@ -2789,7 +2789,7 @@
 						// 计算高度
 						if($(document).scrollTop() >= $(evaluate_container).offset().top - $(window).height()) {
 							$("body").data("loading-goods-comment", true);
-							$.get('js/data/goods-comment.json', {
+							$.get('/static/js/data/goods-comment.json', {
 								sku_id: "6163",
 								output: 1
 							}, function(result) {
@@ -3305,10 +3305,10 @@
 		<div style="display: none;"></div>
 		<!-- 底部 _end-->
 
-		<script type="text/javascript" src="js/jquery.fly.min.js"></script>
-		<script type="text/javascript" src="js/szy.cart.js"></script>
+		<script type="text/javascript" src="/static/js/jquery.fly.min.js"></script>
+		<script type="text/javascript" src="/static/js/szy.cart.js"></script>
 		<!--[if lte IE 9]>
-<script type="text/javascript" src="/js/requestAnimationFrame.js"></script>
+<script type="text/javascript" src="//static/js/requestAnimationFrame.js"></script>
 <![endif]-->
 		<script type="text/javascript">
 			$().ready(function() {

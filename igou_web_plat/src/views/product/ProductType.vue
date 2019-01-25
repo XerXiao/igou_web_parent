@@ -3,12 +3,19 @@
         <div style="padding-top: 20px;">
             <el-row :gutter="20">
                 <el-col :span="6">
+                    <el-input
+                            placeholder="输入关键字进行过滤"
+                            clearable
+                            prefix-icon="el-icon-search"
+                            v-model="filterText">
+                    </el-input>
                     <el-tree
                             style="height: 580px;overflow: scroll;overflow-x:hidden;"
                             :data="productTypes"
                             node-key="id"
                             :props="defaultProps"
                             @node-contextmenu="rightClick"
+                            :filter-node-method="filterNode"
                             show-checkbox
                             @node-click="leftClick"
                             ref="tree"
@@ -142,6 +149,8 @@
     export default {
         data() {
             return {
+                //树节点过滤输入框
+                filterText: '',
                 DATA: null,
                 NODE: null,
                 //判断是否需要添加自己节点
@@ -190,6 +199,11 @@
             }
         },
         methods: {
+            //树节点搜索过滤
+            filterNode(value, data) {
+                if (!value) return true;
+                return data.label.indexOf(value) !== -1;
+            },
             getDataTrees() {
                 this.$http.get("/services/product/productType/treeData")
                     .then(({data}) => {
@@ -226,7 +240,7 @@
             //删除节点
             handleDel: function (obj) {
                 //先判断该节点是否含有子节点
-                if (obj.children == null || obj.children.length == 0) {
+                if (obj.children == null || obj.children.length === 0) {
                     this.$confirm('确认删除该节点吗?', '提示', {
                         type: 'warning'
                     }).then(() => {
@@ -243,14 +257,7 @@
                             this.editDivVisible = false;
                             this.getDataTrees();
                         });
-                    }).catch(() => {
-                        this.$message({
-                            message: '提交异常',
-                            type: 'error'
-                        });
-                        this.editDivVisible = false;
-                        this.getDataTrees();
-                    });
+                    })
                 } else {
                     this.$confirm('该节点含有子节点?', '提示', {
                         type: 'warning'
@@ -304,6 +311,7 @@
                         this.parentIds = [];
                         this.editDivVisible = true;
                         this.subAddDivVisible = false;
+                        this.menuVisible = false;
                         break;
                     case '2':
                         //修改分类
@@ -316,12 +324,14 @@
                             logo: obj.logo
                         };
                         this.editDivVisible = true;
+                        this.menuVisible = false;
 
                         break;
                     case '3':
                         //删除分类
                         let node = this.DATA;
                         this.handleDel(node);
+                        this.menuVisible = false;
                         break;
                     case '4':
                         //添加子标签
@@ -341,6 +351,7 @@
                         };
                         this.editDivVisible = false;
                         this.subAddDivVisible = true;
+                        this.menuVisible = false;
                         break;
                 }
             },
@@ -435,6 +446,11 @@
         },
         mounted() {
             this.getDataTrees();
+        },
+        watch: {
+            filterText(val) {
+                this.$refs.tree.filter(val);
+            }
         }
     }
 

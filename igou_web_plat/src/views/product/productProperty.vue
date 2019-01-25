@@ -1,13 +1,20 @@
 <template>
     <section>
-        <el-row :gutter="20">
+        <el-row :gutter="20" style="padding-top: 20px">
             <!--对应商品类别信息-->
             <el-col :span="6">
+                <el-input
+                        placeholder="输入关键字进行过滤"
+                        clearable
+                        prefix-icon="el-icon-search"
+                        v-model="filterText">
+                </el-input>
                 <el-tree
                         style="height: 580px;overflow: scroll;overflow-x:hidden;"
                         :data="productTypes"
                         node-key="id"
                         :props="defaultProps"
+                        :filter-node-method="filterNode"
                         @node-click="leftClick"
                         ref="tree"
                 >
@@ -23,7 +30,8 @@
                             <div slot="header" class="clearfix">
                                 <span>显示属性</span>
                                 <el-button style="float: right; padding: 3px 0 0 10px" type="text"
-                                           @click="changeSubmit"><i
+                                           v-show="saveViewChangeShow"
+                                           @click="changeSubmit(0)"><i
                                         class="el-icon-circle-check"></i>&nbsp;保存修改
                                 </el-button>
 
@@ -37,8 +45,13 @@
                                 <el-col :span="6" v-for="(propertie,index) in this.viewProperties"
                                         style="padding-bottom: 10px">
                                     <el-card shadow="hover" style="line-height: 40px;" class="card">
-                                        <el-input v-model="propertie.name" class="change-input">
+                                        <el-input
+                                                v-model="propertie.name"
+                                                class="change-input"
+                                                @blur="checkInput(0,index)"
+                                        >
                                         </el-input>
+
                                         <div style="float: right;" class="change-status">
                                             <!--<el-button type="primary" @click="handleViewCardEditBtnClick(index)"-->
                                             <!--icon="el-icon-edit"></el-button>-->
@@ -58,25 +71,26 @@
                                     width="400"
                                     v-show="delInfoShow"
                                     trigger="hover">
-                                    <el-table :data="delCardArr">
-                                        <el-table-column property="name" label="属性名称"></el-table-column>
-                                        <el-table-column>
-                                            <template slot-scope="scope">
-                                                <el-button type="success" size="small"
-                                                           style="float: right"
-                                                           @click="reBackCard(scope.$index,scope.row)">恢复
-                                                </el-button>
-                                            </template>
-                                        </el-table-column>
-                                        <el-table-column>
-                                            <template slot="header" slot-scope="scope">
-                                                <el-button type="danger" style="height: 30px;line-height: 0px">删除属性</el-button>
-                                            </template>
-                                        </el-table-column>
+                                <el-table :data="delCardArr">
+                                    <el-table-column property="name" label="属性名称"></el-table-column>
+                                    <el-table-column>
+                                        <template slot-scope="scope">
+                                            <el-button type="success" size="small"
+                                                       style="float: right"
+                                                       @click="reBackCard(0,scope.$index,scope.row)">恢复
+                                            </el-button>
+                                        </template>
+                                    </el-table-column>
+                                    <el-table-column>
+                                        <template slot="header" slot-scope="scope">
+                                            <el-button type="danger" style="height: 30px;line-height: 0px"
+                                                       @click="cleanDelArr"
+                                            >删除属性
+                                            </el-button>
+                                        </template>
+                                    </el-table-column>
 
-                                    </el-table>
-
-
+                                </el-table>
 
 
                                 <el-badge slot="reference"
@@ -93,15 +107,40 @@
                         <el-card class="box-card">
                             <div slot="header" class="clearfix">
                                 <span>SKU属性</span>
-                                <el-button style="float: right; padding: 3px 0" type="text"><i
+
+                                <el-button style="float: right; padding: 3px 0 0 10px" type="text"
+                                           v-show="saveSkuChangeShow"
+                                           @click="changeSkuSubmit"><i
+                                        class="el-icon-circle-check"></i>&nbsp;保存修改
+                                </el-button>
+
+                                <el-button style="float: right; padding: 3px 0" type="text"
+                                           @click="handleAddSkuPropertie"
+                                ><i
                                         class="el-icon-circle-plus"></i>&nbsp;添加Sku属性
                                 </el-button>
+
+
                             </div>
                             <el-row :gutter="12">
                                 <el-col :span="6" v-for="(propertie,index) in this.skuProperties"
                                         style="padding-bottom: 10px">
-                                    <el-card shadow="hover">
-                                        {{propertie.name}}
+                                    <!--<el-card shadow="hover">-->
+                                    <!--{{propertie.name}}-->
+                                    <!--</el-card>-->
+
+                                    <el-card shadow="hover" style="line-height: 40px;" class="card">
+                                        <el-input v-model="propertie.name" class="change-input"
+                                                  @blur="checkInput(1,index)"
+                                        >
+                                        </el-input>
+                                        <div style="float: right;" class="change-status">
+                                            <!--<el-button type="primary" @click="handleViewCardEditBtnClick(index)"-->
+                                            <!--icon="el-icon-edit"></el-button>-->
+                                            <el-button type="primary"
+                                                       @click="handleSkuCardDelBtnClick(index,propertie)"
+                                                       icon="el-icon-delete"></el-button>
+                                        </div>
                                     </el-card>
                                 </el-col>
 
@@ -109,6 +148,41 @@
                                     暂无Sku属性
                                 </el-card>
                             </el-row>
+
+                            <el-popover
+                                    placement="right"
+                                    width="400"
+                                    v-show="delSkuInfoShow"
+                                    trigger="hover">
+                                <el-table :data="delSkuCardArr">
+                                    <el-table-column property="name" label="属性名称"></el-table-column>
+                                    <el-table-column>
+                                        <template slot-scope="scope">
+                                            <el-button type="success" size="small"
+                                                       style="float: right"
+                                                       @click="reBackCard(1,scope.$index,scope.row)">恢复
+                                            </el-button>
+                                        </template>
+                                    </el-table-column>
+                                    <el-table-column>
+                                        <template slot="header" slot-scope="scope">
+                                            <el-button type="danger" style="height: 30px;line-height: 0px"
+                                                       @click="cleanDelArr"
+                                            >删除属性
+                                            </el-button>
+                                        </template>
+                                    </el-table-column>
+
+                                </el-table>
+
+
+                                <el-badge slot="reference"
+                                          :value="delSkuCardArr.length"
+                                          class="item"
+                                          style="float: right;padding-bottom: 10px">
+                                    <el-button size="small"><i class="el-icon-delete"></i></el-button>
+                                </el-badge>
+                            </el-popover>
                         </el-card>
                     </el-row>
 
@@ -143,6 +217,9 @@
     export default {
         data() {
             return {
+
+                //树节点搜索输入框
+                filterText: '',
                 DATA: null,
                 NODE: null,
                 iconShow: false,
@@ -156,14 +233,22 @@
                 //存放商品类别信息
                 productTypes: [],
                 viewPropertiesLength: 0,
+                skuPropertiesLength: 0,
                 //存放类别对应属性信息
                 properties: [],
                 //存放显示属性信息
                 viewProperties: [],
-                //存放准备删除的属性数组
+                //存放准备删除的显示属性数组
                 delCardArr: [],
-                //删除信息图标显示与否标志
-                delInfoShow:false,
+                //存放准备删除的sku属性数组
+                delSkuCardArr: [],
+                //显示属性删除信息图标显示与否标志
+                delInfoShow: false,
+                //sku属性
+                delSkuInfoShow: false,
+                //保存修改按钮是否显示标志
+                saveViewChangeShow: false,
+                saveSkuChangeShow: false,
                 addViewProperties: [],
                 //存放sku属性信息
                 skuProperties: [],
@@ -200,8 +285,92 @@
             }
         },
         methods: {
+            //树节点搜索过滤
+            filterNode(value, data) {
+                if (!value) return true;
+                return data.label.indexOf(value) !== -1;
+            },
+            //输入内容后检测输入数据
+            checkInput(flag, index) {
+                if (flag === 1) {
+                    //sku检测
+                    //显示检测
+                    if (!this.skuProperties[index].name) {
+                        this.$notify.warning({
+                            title: '警告',
+                            message: '属性不能为空'
+                        });
+                        this.saveSkuChangeShow = false;
+                    }else {
+                        //显示修改按钮
+                        this.saveSkuChangeShow = true;
+                    }
+                } else {
+                    //显示检测
+                    if (!this.viewProperties[index].name) {
+                        this.$notify.warning({
+                            title: '警告',
+                            message: '属性不能为空'
+                        });
+                        this.saveViewChangeShow = false;
+                    }else {
+
+
+                        //显示修改按钮
+                        this.saveViewChangeShow = true;
+                    }
+
+                }
+            },
+            //清空待删除属性数组即执行删除操作
+            cleanDelArr() {
+                this.$confirm('确认进行删除操作?将无法恢复！', '提示', {
+                    type: 'warning'
+                }).then(() => {
+                    let para = this.CardDelArr.toString();
+                    this.$http.delete("/services/product/specification/delete?ids=" + para)
+                        .then(({data}) => {
+                            this.listLoading = false;
+                            //NProgress.done();
+                            this.$message({
+                                message: '删除成功',
+                                type: 'success'
+                            });
+                            this.getPropertys();
+                            //操作完成清空记录删除数据数组
+                            this.CardDelArr = [];
+                            this.delCardArr = [];
+                            this.delSkuCardArr = [];
+                            this.delInfoShow = false;
+                            this.delSkuInfoShow = false;
+                            this.saveViewChangeShow = false;
+                            this.saveSkuChangeShow = false;
+                        });
+                });
+            },
+            //保存sku
+            changeSkuSubmit() {
+                this.$confirm('确认保存修改?', '提示', {
+                    type: 'warning'
+                }).then(() => {
+                    this.listLoading = true;
+                    let para = Object.assign(this.skuProperties);
+                    this.$http.post("/services/product/specification/save", para)
+                        .then(({data}) => {
+                            this.listLoading = false;
+                            //NProgress.done();
+                            this.$message({
+                                message: '保存成功',
+                                type: 'success'
+                            });
+                            this.skuProperties.push(para);
+                        });
+                });
+            },
             //输入后弹出保存提示
-            changeSubmit() {
+            changeSubmit(flag) {
+                //0表示保存显示属性
+                //1表示保存sku属性
                 this.$confirm('确认保存修改?', '提示', {
                     type: 'warning'
                 }).then(() => {
@@ -209,8 +378,13 @@
                     //
                     let arr = [];
                     let len = this.viewProperties.length - this.viewPropertiesLength;
-                    if (len > 0) {
-                        //新增属性
+
+                    let arrSku = [];
+                    let lenSku = this.skuProperties.length - this.skuPropertiesLength;
+
+
+                    if (len > 0 && flag === 0) {
+                        //新增显示属性
                         for (let i = 0; i < len; i++) {
                             arr.push(this.viewProperties.pop());
                         }
@@ -226,30 +400,50 @@
                                 });
                                 this.viewProperties.push(para);
                             });
-                    } else {
-                        //删除属性
-                        let para = Object.assign({}, this.CardDelArr);
-                        this.$http.delete("/services/product/specification/delete?ids=" + JSON.stringify(para))
-                            .then(({data}) => {
-                                this.listLoading = false;
-                                //NProgress.done();
-                                this.$message({
-                                    message: '删除成功',
-                                    type: 'success'
+                    } else if (len > 0 && flag === 1) {
+                        //新增sku属性
+                        this.$confirm('确认保存修改?', '提示', {
+                            type: 'warning'
+                        }).then(() => {
+                            for (let i = 0; i < lenSku; i++) {
+                                arrSku.push(this.skuProperties.pop());
+                            }
+                            //NProgress.start();
+                            let para = Object.assign(arrSku);
+                            this.listLoading = true;
+                            this.$http.post("/services/product/specification/save", para)
+                                .then(({data}) => {
+                                    this.listLoading = false;
+                                    //NProgress.done();
+                                    this.$message({
+                                        message: '保存成功',
+                                        type: 'success'
+                                    });
+                                    this.skuProperties.push(para);
                                 });
-                                this.getPropertys();
-                                //操作完成清空记录删除数据数组
-                                this.CardDelArr = [];
-                            });
+                        });
                     }
-
                 })
             },
+            //单击添加属性
             handleAddViewPropertie() {
+
                 this.viewProperties.push({
                     id: null,
                     name: '',
                     isSku: 0,
+                    productTypeId: this.DATA.data.id,
+                    isDeleted: 0,
+                    selectValue: null,
+                    skuValues: []
+                })
+            },
+            //单击添加sku属性
+            handleAddSkuPropertie() {
+                this.skuProperties.push({
+                    id: null,
+                    name: '',
+                    isSku: 1,
                     productTypeId: this.DATA.data.id,
                     isDeleted: 0,
                     selectValue: null,
@@ -261,17 +455,60 @@
                 this.inputShow = true;
             },
             //恢复删除数据
-            reBackCard(index, row) {
-                this.viewProperties.push(row);
-                this.delCardArr.splice(index,1)
+            reBackCard(flag, index, row) {
+                if (flag === 1) {
+                    //sku
+                    this.skuProperties.push(row);
+                    this.delSkuCardArr.splice(index, 1);
+                    this.CardDelArr.splice(index,1);
+
+                    //当已选择要删除属性列表为空时隐藏按钮
+                    if (this.delSkuCardArr.length === 0) {
+                        this.delSkuInfoShow = false;
+                    }
+                } else {
+                    //显示
+                    this.viewProperties.push(row);
+                    this.delCardArr.splice(index, 1);
+                    this.CardDelArr.splice(index,1);
+                    //当已选择要删除属性列表为空时隐藏按钮
+                    if (this.delCardArr.length === 0) {
+                        this.delInfoShow = false;
+                    }
+                }
+
             },
             handleViewCardDelBtnClick(index, row) {
-                //记录删除卡片数据
-                this.CardDelArr.push(index);
-                this.viewProperties.splice(index, 1);
-                //记录备删除数据
-                this.delCardArr.push(row);
-                this.delInfoShow = true;
+                if(row.name && row.id) {
+                    //当输入框中有值并且是原有属性时才进入回收站，否则直接丢弃
+                    //记录删除卡片数据
+                    this.CardDelArr.push(row.id);
+                    this.viewProperties.splice(index, 1);
+                    //记录备删除数据
+                    this.delCardArr.push(row);
+                    this.delInfoShow = true;
+
+                }else {
+                    this.viewProperties.splice(index, 1);
+                }
+                //当删除按钮出现之后隐藏保存按钮
+                this.saveViewChangeShow = false;
+
+            },
+            handleSkuCardDelBtnClick(index, row) {
+                if(row.name && row.id) {
+                    //当输入框中有值并且是原有属性时才进入回收站，否则直接丢弃
+                    //记录删除卡片数据
+                    this.CardDelArr.push(row.id);
+                    this.skuProperties.splice(index, 1)
+                    //记录备删除数据
+                    this.delSkuCardArr.push(row);
+                    this.delSkuInfoShow = true;
+                }else {
+                    this.skuProperties.splice(index, 1)
+                }
+                //当删除按钮出现之后隐藏保存按钮
+                this.saveSkuChangeShow = false;
             },
             //鼠标悬浮属性卡片事件
             handleMouseIn() {
@@ -302,6 +539,8 @@
                     this.$http.get("/services/product/specification/skuList/" + productTypeId)
                         .then(({data}) => {
                             this.skuProperties = data;
+                            //记录属性长度
+                            this.skuPropertiesLength = this.skuProperties.length;
                         })
                 } else {
                     this.operatePropertysFormVisible = false;
@@ -509,6 +748,11 @@
         mounted() {
             this.getPropertys();
             this.getDataTrees();
+        },
+        watch: {
+            filterText(val) {
+                this.$refs.tree.filter(val);
+            }
         }
     }
 
@@ -531,6 +775,7 @@
     .card:hover .change-input {
         width: 60%;
     }
+
 
     .el-icon-edit:hover {
         cursor: pointer;
